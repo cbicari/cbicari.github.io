@@ -85,8 +85,8 @@
   .console { margin-top: 36px; background: var(--console-bg); border-radius: var(--radius); padding: 20px 22px; max-width: 640px; }
   .console .console-head { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--console-dim); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
   .console .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--console-dim); }
-  .console-lines { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--console-text); min-height: 96px; }
-  .console-lines .line { opacity: 0; transform: translateY(2px); transition: opacity .35s ease, transform .35s ease; white-space: pre-wrap; word-break: break-word; margin: 0 0 6px; }
+  .console-lines { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--console-text); height: 108px; overflow: hidden; }
+  .console-lines .line { opacity: 0; transform: translateY(2px); transition: opacity .35s ease, transform .35s ease; white-space: pre-wrap; word-break: break-word; line-height: 1.5; margin: 0 0 6px; }
   .console-lines .line.show { opacity: 1; transform: translateY(0); }
   @media (prefers-reduced-motion: reduce) { .console-lines .line { transition: none; opacity: 1; transform: none; } }
 
@@ -136,6 +136,7 @@
     .hero { padding: 44px 0 32px; }
     .header-right { gap: 12px; justify-content: flex-end; width: 100%; }
     header.site .wrap { flex-direction: column; align-items: flex-start; }
+    .console-lines { height: 184px; }
   }
 
   @media (max-width: 400px) {
@@ -789,18 +790,17 @@
   var i = 0;
 
   function tick() {
+    if (visible.length >= MAX_VISIBLE) {
+      var old = visible.shift();
+      old.remove();
+    }
+
     var d = document.createElement('div');
     d.className = 'line';
     d.textContent = lines[i % lines.length];
     el.appendChild(d);
     visible.push(d);
     requestAnimationFrame(function () { d.classList.add('show'); });
-
-    if (visible.length > MAX_VISIBLE) {
-      var old = visible.shift();
-      old.classList.remove('show');
-      setTimeout(function () { old.remove(); }, 400);
-    }
     i++;
   }
 
