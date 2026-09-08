@@ -553,6 +553,46 @@
           </div>
         </div>
 
+        <div class="card">
+          <h3>Self-observing volumetric installation</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: depth cameras and an external fisheye camera feed volumetric capture and a vision-language model, which drive spherical projection and generative visuals in a closed self-observing loop.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Depth + fisheye cameras</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">volumetric + external view</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Point cloud + local VLM</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">Stable Diffusion, EN/FR description</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">Sphere projection</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">self-observing feedback loop</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">A real-time installation where a vision-language model watches the piece from
+            outside, describes it in English and French, and feeds that description back in as a prompt
+            steering the generative visuals — while spectators' own volumetric point cloud shapes the same
+            imagery from the inside.</span>
+            <span data-lang="fr" hidden>Une installation en temps réel où un modèle vision-langage observe la
+            pièce de l'extérieur, la décrit en anglais et en français, puis réinjecte cette description comme
+            invite pour orienter les visuels génératifs — pendant que le nuage de points volumétrique des
+            spectateurs façonne la même image de l'intérieur.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">Vision-language model</span><span class="tag">Stable Diffusion</span>
+            <span class="tag">OSC</span><span class="tag">real-time orchestration</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Private installation — available on request. <a href="aida_installation_architecture_en.html">Read the architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Installation privée — disponible sur demande. <a href="aida_installation_architecture_fr.html">Lire la note d'architecture →</a></span>
+          </div>
+        </div>
+
       </div>
     </div>
 
