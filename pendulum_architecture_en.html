@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendulum installation — Firmware architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .box-outline { fill: none; stroke: var(--border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .cycle-note { font-size: 12px; fill: var(--muted); font-style: italic; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="pendulum_architecture_fr.html">Français</a>
+</div>
+
+<h1>Pendulum installation</h1>
+<p class="subtitle">Firmware architecture overview</p>
+
+<p>
+Firmware for a large kinetic pendulum installation, built from a chain of motorised arm segments and a
+rotary electromagnetic booster at the base. Four independent
+<a href="https://platformio.org/">PlatformIO</a> firmware projects target Teensy 4.1 boards — one per arm
+segment (small, middle, long) plus one for the booster — sharing the same OSC communication layer but each
+with its own physical geometry, motor count, and OSC address namespace.
+</p>
+
+<h2>Hardware topology</h2>
+<p>
+Commands arrive over the network as OSC messages, which reach an <strong>x-io Technologies NGIMU</strong>
+unit acting as an OSC-over-serial bridge. Each Teensy 4.1 controller receives OSC both directly over its USB
+serial port and via the NGIMU on its auxiliary serial port (<code>Serial1</code>), decoded through a
+SLIP-framed OSC layer (<code>Receive.cpp</code>/<code>Send.cpp</code>, based on Seb Madgwick's OSC99 library
+with an <code>EventScheduler</code>/<code>EventTrigger</code> layer for periodic/edge-triggered sends).
+</p>
+<p>Each Teensy drives its own actuator hardware:</p>
+<ul>
+  <li>The three <strong>arm controllers</strong> (small, middle, long) each drive 2–3 linear carriage motors
+  through a <strong>Cytron motor driver board</strong>, whose power is gated by a MOSFET control pin, using a
+  PWM speed pin and a digital direction pin per motor, with a quadrature <code>Encoder</code> per motor for
+  closed-loop position feedback and mechanical limit switches for calibration and hard stops.</li>
+  <li>The <strong>booster controller</strong> drives a ring of <strong>electromagnetic coils</strong> directly
+  via a PWM strength pin and a polarity/direction pin, using a single rotary <code>Encoder</code> to time coil
+  pulses against the swinging pendulum's position.</li>
+</ul>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Pendulum installation hardware topology</title>
+<desc>OSC commands arrive over the network into an x-io NGIMU bridge, which relays them over serial to four independent Teensy 4.1 controllers, each driving its own motor or electromagnet coil hardware and physical actuators.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Control network</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">OSC messages over UDP</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">NGIMU bridge</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">x-io Technologies, OSC ⇄ serial</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a1)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">4× Teensy 4.1 controllers</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Small/middle/long arm + booster</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a1)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Motor / coil drivers</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Cytron boards or coil PWM+DIR</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a1)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Physical actuators</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Carriage motors / electromagnets</text>
+<text class="cycle-note" x="340" y="410" text-anchor="middle">Encoders and limit switches feed position back up to their Teensy</text>
+</svg>
+<figcaption>Hardware topology: network → NGIMU → controllers → drivers → actuators</figcaption>
+</div>
+
+<h2>Shared firmware loop</h2>
+<p>
+All four firmware variants share the same overall loop shape, built from the same generic
+<code>Receive.cpp</code> / <code>Send.cpp</code> pair:
+</p>
+<ol>
+  <li><strong>OSC input (SLIP)</strong> — <code>ReceiveDoTasks()</code> pulls bytes from both the USB serial
+  port and the NGIMU auxiliary serial port, feeding two independent SLIP decoders.</li>
+  <li><strong>Dispatch by address</strong> — each decoded OSC message is matched against a literal address
+  pattern (e.g. <code>/smallArm/destinationM1</code>, <code>/booster/activeZone</code>) and updates the
+  relevant controller's state: a motor's <code>destination</code>, a flag like <code>brakeState</code> or
+  <code>broadcast</code>, or triggers an action like <code>calibrate()</code>.</li>
+  <li><strong>Control loop</strong> — the arm controllers check limit switches (debounced via
+  <code>Bounce</code>), run the calibration state machine if active, and otherwise drive motors toward their
+  destinations; the booster controller reads its rotary encoder, determines swing direction, and evaluates
+  which electromagnet "zone" is active.</li>
+  <li><strong>Hardware I/O</strong> — PWM/direction signals go out to the Cytron driver or coil driver;
+  encoder and limit-switch state comes back in.</li>
+  <li><strong>Scheduled telemetry</strong> — <code>SendDoTasks()</code> runs an <code>EventScheduler</code>
+  that periodically packages state (motor positions, calibration status, limit-switch triggers, errors, etc.)
+  into OSC messages sent back out over <code>Serial1</code> to the NGIMU, gated by each controller's own
+  <code>broadcast</code>/<code>broadcastState</code> flag.</li>
+</ol>
+<p>This loop repeats indefinitely inside each <code>.ino</code>'s <code>loop()</code>.</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Shared firmware loop structure</title>
+<desc>Each of the four Teensy firmwares runs the same loop shape: decode incoming OSC over serial, dispatch it by address to update local state, run the control loop against limit switches and encoders, drive the hardware, then send scheduled telemetry back out, repeating every main loop iteration.</desc>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">OSC input (SLIP)</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">USB serial + NGIMU aux serial</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Dispatch by address</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Updates destinations and flags</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Control loop</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Limit switches, calibration, closed-loop move</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Hardware I/O</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">PWM+DIR out, encoders/switches in</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Scheduled telemetry</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Position, status, errors out over serial</text>
+<text class="cycle-note" x="340" y="410" text-anchor="middle">↻ repeats every main-loop iteration</text>
+</svg>
+<figcaption>Shared firmware loop, common to all four controller variants</figcaption>
+</div>
+
+<h2>Arm segment chain</h2>
+<p>
+The three arm firmwares share the same underlying <code>motor</code>/limit-switch/calibration machinery, but
+describe different points along one mechanical chain, from the rotary base to the tip:
+</p>
+<table>
+  <tr><th>Segment</th><th>Motors</th><th>Role of each motor</th></tr>
+  <tr><td><strong>Booster</strong> (base)</td><td>— (coil ring)</td><td>Electromagnetically drives the pendulum's rotary swing</td></tr>
+  <tr><td><strong>Long arm</strong></td><td>M1, M2, M3</td><td>M1 = damper carriage; M2 = receiver, connects to the booster/base axle; M3 = transmitter, connects to the middle arm's receiver</td></tr>
+  <tr><td><strong>Middle arm</strong></td><td>M1, M2, M3</td><td>M1 = damper carriage; M2 = receiver, connects to the long arm's transmitter; M3 = transmitter, connects to the small arm's receiver</td></tr>
+  <tr><td><strong>Small arm</strong> (tip)</td><td>M1, M2</td><td>M1 = damper carriage; M2 = receiver, connects to the middle arm's transmitter</td></tr>
+</table>
+<p>
+Within each arm, <code>SAFE_DISTANCE_*</code> constants enforce a minimum encoder-tick gap between adjacent
+carriages so they can never physically collide, and each carriage's <code>min_pos</code>/<code>max_pos</code>
+is continuously recomputed relative to its neighbours in <code>update_motor_positions()</code>.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 220" role="img">
+<title>Pendulum arm segment chain, base to tip</title>
+<desc>The booster forms the rotary base, mechanically linked in sequence to the long arm, then the middle arm, then the small arm at the tip.</desc>
+<defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-outline" x="20" y="50" width="600" height="120" rx="20"/>
+<text class="subtitle-svg" x="320" y="40" text-anchor="middle">Base → tip</text>
+<rect class="box" x="40" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="104" y="102" text-anchor="middle">Booster</text>
+<text class="subtitle-svg" x="104" y="120" text-anchor="middle">Coil driver, rotary base</text>
+<line class="arrow" x1="168" y1="110" x2="181" y2="110" marker-end="url(#a3)"/>
+<rect class="box-purple" x="181" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="245" y="102" text-anchor="middle">Long arm</text>
+<text class="subtitle-svg" x="245" y="120" text-anchor="middle">3 carriages</text>
+<line class="arrow" x1="309" y1="110" x2="322" y2="110" marker-end="url(#a3)"/>
+<rect class="box-coral" x="322" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="386" y="102" text-anchor="middle">Middle arm</text>
+<text class="subtitle-svg" x="386" y="120" text-anchor="middle">3 carriages</text>
+<line class="arrow" x1="450" y1="110" x2="463" y2="110" marker-end="url(#a3)"/>
+<rect class="box-amber" x="463" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="527" y="102" text-anchor="middle">Small arm (tip)</text>
+<text class="subtitle-svg" x="527" y="120" text-anchor="middle">2 carriages</text>
+</svg>
+<figcaption>Mechanical chain from the booster base to the small-arm tip</figcaption>
+</div>
+
+<h3>Per-arm specifics</h3>
+<table>
+  <tr><th></th><th>Small arm</th><th>Middle arm</th><th>Long arm</th></tr>
+  <tr><td>Motors</td><td>2</td><td>3</td><td>3</td></tr>
+  <tr><td>Limit switches</td><td>3 (top, top-mid, bottom)</td><td>4 (top, top-mid, mid-bottom, bottom)</td><td>4 (top, top-mid, mid-bottom, bottom)</td></tr>
+  <tr><td>Brake</td><td>Yes (<code>brakeControlPin</code>, <code>checkBrakeState()</code>)</td><td>No — brake OSC handler commented out, no brake check in the loop</td><td>Yes (<code>brakeState</code> restored, checked via OSC and <code>checkBrakeState()</code>)</td></tr>
+  <tr><td>Full-scale ticks</td><td>300,000 (<code>CALIBRATE_MAX_SMALL_ARM</code>)</td><td>800,000 (<code>CALIBRATE_MAX_MIDDLE_ARM</code>)</td><td>6,791,754 (<code>CALIBRATE_MAX_LONG_ARM</code>), ≈137 cm top to bottom</td></tr>
+  <tr><td>OSC namespace</td><td><code>/smallArm/...</code></td><td><code>/middleArm/...</code></td><td><code>/longArm/...</code></td></tr>
+  <tr><td>Struct type</td><td><code>pendulum_small_arm</code></td><td><code>pendulum_mid_long_arms</code> (instance <code>middleArm</code>)</td><td><code>pendulum_mid_long_arms</code> (instance <code>longArm</code>)</td></tr>
+</table>
+<p>
+Each arm's calibration routine drives its extreme motors to their limit switches to zero the encoders, then
+records <code>min_pos</code>/<code>max_pos</code> for the rest of the run. A <code>move_motors()</code> step
+reduces PWM speed in fixed distance bands as a carriage nears its destination (<code>motor_movement()</code>),
+and gives a short PWM "boost" if a motor appears stuck (position unchanged over ~5000 loop iterations).
+</p>
+
+<h3>Power-loss recovery (small/middle/long arm)</h3>
+<p>All three arm firmwares persist the last known motor positions to EEPROM (magic-numbered struct,
+<code>saveLastKnownPositions()</code> / <code>loadLastKnownPositions()</code>):</p>
+<ul>
+  <li>Saved with <code>EEPROM_RELIABILITY_CLEAN</code> right when all motors settle within bounds.</li>
+  <li>Periodically autosaved with <code>EEPROM_RELIABILITY_APPROX</code> while motors are actively moving
+  (every <code>AUTOSAVE_INTERVAL_MS</code>), in case power is lost mid-move.</li>
+  <li>On boot, a valid saved position lets the arm resume without a full calibration pass; the reliability
+  level is broadcast over OSC (<code>/*/resumeReliability</code>) so the operator knows whether the resumed
+  position is exact or approximate.</li>
+</ul>
+
+<h2>Booster: electromagnetic rotary drive</h2>
+<p>
+The booster is architecturally different from the three arms — instead of driving carriages along a track,
+it pulses a ring of electromagnetic coils to add energy to the pendulum's rotary swing, timed against a
+single rotary encoder:
+</p>
+<ul>
+  <li><strong>Direction detection</strong>: comparing the new encoder position to the last one (within a
+  guard band around the encoder's zero-crossing, <code>LIMIT_Z_ORIGIN_NEGATIVE</code>/<code>_POSITIVE</code>)
+  determines whether the pendulum is currently swinging clockwise or counter-clockwise.</li>
+  <li><strong>Position zones</strong>: the encoder's swing range is divided into "over coil", "between coil",
+  and "dead" bands (<code>Bound</code>/<code>Zone</code> structs, precomputed position tables). Depending on
+  the selected <strong>active zone</strong> (0–3), a progressively larger set of electromagnet pairs is
+  considered live — zone 0 uses the innermost 3 pairs, up to zone 3 which uses all pairs across the swing
+  range.</li>
+  <li><strong>Coil firing</strong>: when the current position falls in an active "over coil" or "between
+  coil" band, the coil is fired at <code>pwm_strength</code> with a polarity chosen from swing direction and
+  band type, so the field always pushes the pendulum forward rather than braking it; positions in the "dead"
+  band get zero PWM.</li>
+  <li><strong>Controls exposed over OSC</strong>: <code>/booster/on</code> (enable/disable),
+  <code>/booster/strength</code> (PWM magnitude), <code>/booster/activeZone</code> (0–3),
+  <code>/booster/brakeState</code>, and <code>/rotary/broadcast</code> (telemetry on/off). Telemetry
+  (<code>/rotary/value</code>) reports the raw encoder position at a slow 60-second interval.</li>
+</ul>
+
+<h2>OSC reference</h2>
+<h3>Arm controllers (<code>smallArm</code> / <code>middleArm</code> / <code>longArm</code>)</h3>
+<table>
+  <tr><th>Address</th><th>Direction</th><th>Purpose</th></tr>
+  <tr><td><code>/*/destinationM1</code>, <code>/*/destinationM2</code>, <code>/*/destinationM3</code>*</td><td>in</td><td>Set a motor's target position (scaled 0–1000, converted to encoder ticks)</td></tr>
+  <tr><td><code>/*/calibrate</code></td><td>in</td><td>Start (or restart) the calibration routine</td></tr>
+  <tr><td><code>/*/stopAllMotors</code></td><td>in</td><td>Zero all PWM outputs and freeze current position as the destination</td></tr>
+  <tr><td><code>/*/brakeState</code></td><td>in</td><td>Engage/release the brake solenoid (small arm and long arm only)</td></tr>
+  <tr><td><code>/*/broadcast</code></td><td>in</td><td>Enable/disable this controller's telemetry</td></tr>
+  <tr><td><code>/*/positionM1</code>, <code>/*/positionM2</code>, <code>/*/positionM3</code>*</td><td>out</td><td>Current motor position</td></tr>
+  <tr><td><code>/*/calibrationStatus</code></td><td>out</td><td>Whether calibration has completed</td></tr>
+  <tr><td><code>/*/resumeReliability</code></td><td>out</td><td>EEPROM resume state: none / clean / approximate</td></tr>
+  <tr><td><code>/*/maxPossiblePositionM1</code>, <code>/*/minPossiblePositionM2</code>, etc.</td><td>out</td><td>Live safe-range bounds derived from neighbouring carriages</td></tr>
+  <tr><td><code>/*/limitSwitch0N Triggered</code></td><td>out</td><td>One-shot notification that a limit switch fired</td></tr>
+  <tr><td><code>/teensy/error</code></td><td>out</td><td>Generic error string (bad OSC address, decode failure, etc.)</td></tr>
+</table>
+<p><em>* <code>destinationM3</code>/<code>positionM3</code> only exist on the middle and long arm (3-motor) firmware.</em></p>
+
+<h3>Booster controller</h3>
+<table>
+  <tr><th>Address</th><th>Direction</th><th>Purpose</th></tr>
+  <tr><td><code>/booster/on</code></td><td>in</td><td>Enable/disable coil firing (also zeroes PWM immediately when disabled)</td></tr>
+  <tr><td><code>/booster/strength</code></td><td>in</td><td>PWM magnitude applied to an active coil</td></tr>
+  <tr><td><code>/booster/activeZone</code></td><td>in</td><td>Selects how many electromagnet pairs are live (0–3)</td></tr>
+  <tr><td><code>/booster/brakeState</code></td><td>in</td><td>Engage/release the booster's brake</td></tr>
+  <tr><td><code>/rotary/broadcast</code></td><td>in</td><td>Enable/disable telemetry</td></tr>
+  <tr><td><code>/rotary/value</code></td><td>out</td><td>Raw rotary encoder position (sent every 60 s)</td></tr>
+  <tr><td><code>/teensy/error</code></td><td>out</td><td>Generic error string</td></tr>
+</table>
+
+<h2>Build</h2>
+<p>Each variant is its own PlatformIO project targeting a Teensy 4.1:</p>
+<pre><code>[env:teensy41]
+platform = teensy
+board = teensy41
+framework = arduino
+
+monitor_port = /dev/ttyACM0
+monitor_speed = 9600</code></pre>
+
+</body>
+</html>

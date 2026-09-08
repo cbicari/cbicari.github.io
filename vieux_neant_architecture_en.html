@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vieux Néant — Modular drum &amp; texture instrument</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .box-outline { fill: none; stroke: var(--border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="vieux_neant_architecture_fr.html">Français</a>
+</div>
+
+<h1>Vieux Néant</h1>
+<p class="subtitle">Modular drum &amp; texture instrument — 20-module Eurorack system, 313 HP across 3 rows</p>
+
+<h2>Purpose</h2>
+<p>
+This system is the result of research into how to build an <strong>improvisation-based drumming
+instrument</strong> for experimental electronic music — one where rhythm, pitch, and timbre aren't
+programmed in advance but shaped live. Designing it meant working across several overlapping bodies of
+knowledge at once:
+</p>
+<ul>
+  <li><strong>Traditional music relationships</strong> — sequencing, pitch, rhythm, and their
+  interdependence, since a percussion instrument still needs a coherent relationship between clock, trigger,
+  and pitch/CV even when none of it is fixed in advance.</li>
+  <li><strong>Tone and timbre</strong> — synthesis method (digital, modal/physical-modeling, granular), and
+  how each contributes a distinct percussive or textural character.</li>
+  <li><strong>Improvisation in "new musics"</strong> — designing for a performer who reacts and shapes the
+  instrument live, rather than a fixed compositional structure.</li>
+  <li><strong>Electronic distribution</strong> — the practical signal-routing layer underneath all of the
+  above: buffered multiples, utility/multi-function modules, and CV distribution that let one gesture or
+  clock reach several destinations reliably.</li>
+</ul>
+<p>The result is documented below the way any signal system would be: as a functional signal-flow
+architecture, and as a power/space budget across a physically constrained case.</p>
+
+<h2>Instrument signal architecture</h2>
+<p>Grouping the 20 modules by function (rather than by physical position) shows the actual signal path from
+clock to stereo output:</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 460" role="img">
+<title>Vieux Néant instrument signal architecture</title>
+<desc>Clock, sequencing and CV utility modules drive percussion, drum and tone synthesis sources, which pass through texture, filtering and processing, into mixing and FX, and out as a stereo performance output. Performance control modules can modulate any stage live for improvisation.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Clock, sequencing &amp; CV utility</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Temps Utile / O_C clones, Disting mk4, Mult</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Percussion, drum &amp; tone sources</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Basimilus, 2x Elements, 2x Pique, Braids, 0-Coast</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a1)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Texture, filtering &amp; processing</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Granular texture, low-pass and multimode filters</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a1)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Mixing &amp; FX</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Performance mixer, stereo FX processor, reverb</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a1)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Stereo output</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Live performance</text>
+<text class="note" x="340" y="415" text-anchor="middle">Performance control (recordable joystick, CV echo) can modulate</text>
+<text class="note" x="340" y="433" text-anchor="middle">any stage live — this is where improvisation happens</text>
+</svg>
+<figcaption>Signal flow from clock to stereo output, grouped by function</figcaption>
+</div>
+
+<h3>Functional groups</h3>
+<table>
+  <tr><th>Group</th><th>Modules</th><th>Role</th></tr>
+  <tr><td><strong>Clock, sequencing &amp; CV utility</strong></td><td>After Later Audio uT_u (Temps Utile clone), After Later Audio uO_C (Ornament &amp; Crime clone), Expert Sleepers Disting mk4, After Later Audio Mult</td><td>Generates and distributes clock/trigger timing, quantizes and processes CV, and buffers signals out to multiple destinations</td></tr>
+  <tr><td><strong>Percussion, drum &amp; tone sources</strong></td><td>Noise Engineering Basimilus Iteritas Alter, After Later Audio Atom (uElements), Mörk Modules Elements, After Later Audio Pique (uPeaks, 1U), After Later Audio Pique (uPeaks, micro), Mutable Instruments Braids, Make Noise 0-Coast</td><td>The instrument's sound-generating core: a dedicated digital drum synthesizer, two modal/physical-modeling voices (Elements, micro and full-size) for struck/plucked timbres, two Peaks-derived function generators for percussive envelope shaping, a macro oscillator, and a self-contained semi-modular voice</td></tr>
+  <tr><td><strong>Texture, filtering &amp; processing</strong></td><td>After Later Audio Monsoon (Clouds clone), Mosaic Low Pass Filter, After Later Audio Popple (Ripples clone)</td><td>Granular texture processing and two filter voices (dedicated low-pass, multimode) for shaping the raw synthesis output</td></tr>
+  <tr><td><strong>Sample playback</strong></td><td>ADDAC System ADDAC111 Ultra .WAV Player</td><td>Introduces recorded material alongside the synthesized voices</td></tr>
+  <tr><td><strong>Performance &amp; gestural control</strong></td><td>Erica Synths Black Joystick2, Synthrotek Echo</td><td>Live, recordable gestural CV control and a CV echo for rhythmic/generative feedback — the instrument's improvisation surface</td></tr>
+  <tr><td><strong>Mixing &amp; FX</strong></td><td>WMD Performance Mixer, Endorphin.es Milky Way 1U, Mosaic Mono Reverb</td><td>Combines all sources and applies stereo FX (16 algorithms) and reverb before output</td></tr>
+</table>
+
+<h2>Power and space budget</h2>
+<p>
+Eurorack modules are constrained on two axes at once: horizontal space (HP, "horizontal pitch") per row, and
+current draw on three DC rails (+12V, −12V, +5V) shared by the whole case. Designing this instrument meant
+budgeting both simultaneously across three rows:
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Vieux Néant case power and space budget</title>
+<desc>The case has three rows totaling 313 horizontal pitch units, each with its own module count and current draw on the plus 12 volt, minus 12 volt, and plus 5 volt rails, summing to a total power budget of 2221 milliamps on plus 12 volts, 807 milliamps on minus 12 volts, and 175 milliamps on plus 5 volts.</desc>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-teal" x="30" y="110" width="620" height="170" rx="20"/>
+<text class="title" x="340" y="132" text-anchor="middle">Vieux Néant case — 313 HP total</text>
+<text class="subtitle-svg" x="340" y="150" text-anchor="middle">3 rows, 20 modules</text>
+<rect class="box-purple" x="50" y="160" width="180" height="100" rx="12"/>
+<text class="title" x="140" y="184" text-anchor="middle">Row 1</text>
+<text class="subtitle-svg" x="140" y="204" text-anchor="middle">72 HP, 4 modules</text>
+<text class="subtitle-svg" x="140" y="222" text-anchor="middle">279 / 42 / 0 mA</text>
+<text class="subtitle-svg" x="140" y="240" text-anchor="middle">+12V / -12V / +5V</text>
+<rect class="box-purple" x="250" y="160" width="180" height="100" rx="12"/>
+<text class="title" x="340" y="184" text-anchor="middle">Row 2</text>
+<text class="subtitle-svg" x="340" y="204" text-anchor="middle">124 HP, 8 modules</text>
+<text class="subtitle-svg" x="340" y="222" text-anchor="middle">1020 / 675 / 175 mA</text>
+<text class="subtitle-svg" x="340" y="240" text-anchor="middle">+12V / -12V / +5V</text>
+<rect class="box-purple" x="450" y="160" width="180" height="100" rx="12"/>
+<text class="title" x="540" y="184" text-anchor="middle">Row 3</text>
+<text class="subtitle-svg" x="540" y="204" text-anchor="middle">117 HP, 8 modules</text>
+<text class="subtitle-svg" x="540" y="222" text-anchor="middle">922 / 90 / 0 mA</text>
+<text class="subtitle-svg" x="540" y="240" text-anchor="middle">+12V / -12V / +5V</text>
+<line class="arrow" x1="340" y1="280" x2="340" y2="312" marker-end="url(#a2)"/>
+<rect class="box-amber" x="220" y="314" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="336" text-anchor="middle">Total power budget</text>
+<text class="subtitle-svg" x="340" y="354" text-anchor="middle">2221 / 807 / 175 mA · 313 HP</text>
+</svg>
+<figcaption>Per-row module count, width, and current draw, summing to the case total</figcaption>
+</div>
+
+<table>
+  <tr><th>Row</th><th>Modules</th><th>Width</th><th>Max depth</th><th>+12V</th><th>−12V</th><th>+5V</th></tr>
+  <tr><td>Row 1</td><td>4</td><td>72 HP</td><td>42 mm</td><td>279 mA</td><td>42 mA</td><td>0 mA</td></tr>
+  <tr><td>Row 2</td><td>8</td><td>124 HP</td><td>50 mm</td><td>1,020 mA</td><td>675 mA</td><td>175 mA</td></tr>
+  <tr><td>Row 3</td><td>8</td><td>117 HP</td><td>42 mm</td><td>922 mA</td><td>90 mA</td><td>0 mA</td></tr>
+  <tr><td><strong>Total</strong></td><td><strong>20</strong></td><td><strong>313 HP</strong></td><td><strong>max 50 mm</strong></td><td><strong>2,221 mA</strong></td><td><strong>807 mA</strong></td><td><strong>175 mA</strong></td></tr>
+</table>
+<p>
+Row 2 alone draws roughly half the case's total +12V and the large majority of its +5V current, mainly from
+the performance mixer and the two power-hungry synthesis/utility modules (ADDAC111, Atom/uElements) sharing
+that row — a reminder that HP budget and power budget don't scale together, and a case that fits physically
+can still be short on current headroom.
+</p>
+
+<h2>Full module reference</h2>
+<table>
+  <tr><th>Module</th><th>Manufacturer</th><th>Row</th><th>Width</th><th>Depth</th><th>+12V</th><th>−12V</th><th>+5V</th></tr>
+  <tr><td>Milky Way 1U (black)</td><td>Endorphin.es</td><td>1</td><td>22 HP</td><td>42 mm</td><td>117 mA</td><td>12 mA</td><td>0 mA</td></tr>
+  <tr><td>Pique (uPeaks, Black, 1U Intellijel)</td><td>After Later Audio</td><td>1</td><td>22 HP</td><td>—</td><td>60 mA</td><td>2 mA</td><td>—</td></tr>
+  <tr><td>Low Pass Filter (Black Panel)</td><td>Mosaic</td><td>1</td><td>14 HP</td><td>38 mm</td><td>20 mA</td><td>20 mA</td><td>0 mA</td></tr>
+  <tr><td>Mono Reverb (Black Panel)</td><td>Mosaic</td><td>1</td><td>14 HP</td><td>28 mm</td><td>82 mA</td><td>8 mA</td><td>0 mA</td></tr>
+  <tr><td>Performance Mixer (black)</td><td>WMD</td><td>2</td><td>40 HP</td><td>45 mm</td><td>450 mA</td><td>430 mA</td><td>0 mA</td></tr>
+  <tr><td>Popple</td><td>After Later Audio</td><td>2</td><td>8 HP</td><td>—</td><td>35 mA</td><td>35 mA</td><td>0 mA</td></tr>
+  <tr><td>ADDAC111 Ultra .WAV Player</td><td>ADDAC System</td><td>2</td><td>16 HP</td><td>30 mm</td><td>150 mA</td><td>150 mA</td><td>—</td></tr>
+  <tr><td>Atom (uElements)</td><td>After Later Audio</td><td>2</td><td>18 HP</td><td>34 mm</td><td>130 mA</td><td>10 mA</td><td>—</td></tr>
+  <tr><td>Braids (old version)</td><td>Mutable Instruments</td><td>2</td><td>16 HP</td><td>20 mm</td><td>15 mA</td><td>15 mA</td><td>85 mA</td></tr>
+  <tr><td>Basimilus Iteritas Alter (Black)</td><td>Noise Engineering</td><td>2</td><td>10 HP</td><td>28 mm</td><td>80 mA</td><td>5 mA</td><td>90 mA</td></tr>
+  <tr><td>Echo</td><td>Synthrotek</td><td>2</td><td>4 HP</td><td>50 mm</td><td>40 mA</td><td>20 mA</td><td>0 mA</td></tr>
+  <tr><td>Monsoon</td><td>After Later Audio</td><td>2</td><td>12 HP</td><td>22 mm</td><td>120 mA</td><td>10 mA</td><td>0 mA</td></tr>
+  <tr><td>0-Coast (eurorack-modified)</td><td>Make Noise</td><td>3</td><td>45 HP</td><td>—</td><td>400 mA</td><td>—</td><td>—</td></tr>
+  <tr><td>Mult</td><td>After Later Audio</td><td>3</td><td>2 HP</td><td>29 mm</td><td>20 mA</td><td>20 mA</td><td>0 mA</td></tr>
+  <tr><td>uO_C (Black &amp; Gold Panel)</td><td>After Later Audio</td><td>3</td><td>8 HP</td><td>20 mm</td><td>85 mA</td><td>10 mA</td><td>0 mA</td></tr>
+  <tr><td>uT_u</td><td>After Later Audio</td><td>3</td><td>8 HP</td><td>20 mm</td><td>85 mA</td><td>10 mA</td><td>—</td></tr>
+  <tr><td>Elements (Black Panel)</td><td>Mörk Modules</td><td>3</td><td>34 HP</td><td>25 mm</td><td>130 mA</td><td>10 mA</td><td>0 mA</td></tr>
+  <tr><td>Black Joystick2</td><td>Erica Synths</td><td>3</td><td>12 HP</td><td>30 mm</td><td>71 mA</td><td>20 mA</td><td>0 mA</td></tr>
+  <tr><td>Disting mk4</td><td>Expert Sleepers</td><td>3</td><td>4 HP</td><td>42 mm</td><td>51 mA</td><td>19 mA</td><td>0 mA</td></tr>
+  <tr><td>Pique (uPeaks, micro)</td><td>After Later Audio</td><td>3</td><td>4 HP</td><td>15 mm</td><td>80 mA</td><td>1 mA</td><td>—</td></tr>
+</table>
+<p><em>("—" marks a spec not recorded in the source data sheet, not a value of zero.)</em></p>
+
+<h2>What this demonstrates</h2>
+<p>
+Beyond the musical result, building this instrument required the same discipline as any constrained
+hardware system: allocating a fixed physical and electrical budget (HP per row, current per DC rail) across
+competing modules, choosing deliberate redundancy where it matters (two percussion-envelope generators, two
+modal-synthesis voices, for timbral range rather than backup), and designing a signal path — clock →
+quantization → sound source → processing → mix — that stays coherent even when the actual performance is
+entirely improvised.
+</p>
+
+</body>
+</html>

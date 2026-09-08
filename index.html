@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[Your Name] — [Conference Name]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F6F3;
+    --paper-2: #ECEEE8;
+    --ink: #14181A;
+    --ink-muted: #545B54;
+    --ink-faint: #7C8279;
+    --copper: #A8582E;
+    --copper-dark: #7C3F1F;
+    --rule: #D7DAD2;
+    --radius: 3px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  a { color: var(--copper-dark); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+  h1, h2, h3, .display {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- i18n ---------- */
+  [data-lang][hidden] { display: none !important; }
+
+  /* ---------- header ---------- */
+  header.site { border-bottom: 1px solid var(--rule); padding: 22px 0; }
+  header.site .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .brand { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 17px; }
+  .brand span { color: var(--copper); }
+  .header-right { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  nav.links { display: flex; gap: 22px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  nav.links a { text-decoration: none; color: var(--ink-muted); border-bottom: 1px solid transparent; }
+  nav.links a:hover { color: var(--copper-dark); border-bottom-color: var(--copper); }
+
+  .lang-toggle { display: flex; gap: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .lang-toggle button {
+    background: transparent; border: 1px solid var(--rule); color: var(--ink-muted);
+    padding: 5px 10px; border-radius: var(--radius); cursor: pointer; line-height: 1;
+  }
+  .lang-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .lang-toggle button:hover { border-color: var(--copper); }
+  .lang-toggle button:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+  @media (max-width: 620px) {
+    .header-right { gap: 12px; justify-content: flex-end; width: 100%; }
+    header.site .wrap { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 64px 0 40px; }
+  .eyebrow-tag {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.09em; color: var(--copper-dark);
+    background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
+    padding: 5px 10px; margin-bottom: 18px;
+  }
+  .hero h1 { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; max-width: 18ch; }
+  .hero .sub { margin-top: 18px; max-width: 62ch; color: var(--ink-muted); font-size: 16.5px; }
+  .hero .sub strong { color: var(--ink); font-weight: 600; }
+  .hero .cta-row { margin-top: 28px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; text-decoration: none;
+    padding: 10px 18px; border-radius: var(--radius); border: 1px solid var(--rule);
+  }
+  .btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn-primary:hover { background: var(--copper-dark); border-color: var(--copper-dark); }
+  .btn-secondary { color: var(--ink-muted); }
+  .btn-secondary:hover { color: var(--copper-dark); border-color: var(--copper); }
+
+  /* ---------- highlights ---------- */
+  .highlights { padding: 40px 0 8px; border-top: 1px solid var(--rule); }
+  .highlights h2.eyebrow {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint);
+    font-family: 'IBM Plex Mono', monospace; font-weight: 500; margin-bottom: 22px;
+  }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .card {
+    background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
+    padding: 20px 20px 18px; display: flex; flex-direction: column;
+  }
+  .card h3 { font-size: 16.5px; margin-bottom: 6px; }
+  .card p { color: var(--ink-muted); font-size: 14px; margin: 0 0 14px; flex-grow: 1; }
+  .card .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .card .tag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 3px 8px;
+  }
+  .card .doc-link { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+  .card .doc-link a { text-decoration: none; border-bottom: 1px solid var(--copper); }
+  .card .doc-link a:hover { color: var(--copper-dark); }
+
+  .more-link { margin: 28px 0 8px; }
+
+  /* ---------- footer ---------- */
+  footer.site { border-top: 1px solid var(--rule); padding: 32px 0 48px; margin-top: 40px; }
+  footer.site p { color: var(--ink-muted); font-size: 14px; max-width: 60ch; }
+  footer.site .contact { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  footer.site .contact a { margin-right: 18px; text-decoration: none; border-bottom: 1px solid var(--copper); }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <div class="brand">[Your Name]<span>.</span></div>
+    <div class="header-right">
+      <nav class="links">
+        <a href="portfolio.html">
+          <span data-lang="en">Full portfolio →</span>
+          <span data-lang="fr" hidden>Portfolio complet →</span>
+        </a>
+        <a href="https://github.com/cbicari" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div class="lang-toggle" role="group" aria-label="Language / Langue">
+        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-set-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow-tag">
+      <span data-lang="en">[Conference Name] — [City, dates]</span>
+      <span data-lang="fr" hidden>[Nom du congrès] — [Ville, dates]</span>
+    </span>
+    <h1>
+      <span data-lang="en">Embedded systems for hardware that has to work in real time.</span>
+      <span data-lang="fr" hidden>Des systèmes embarqués pour du matériel qui doit fonctionner en temps réel.</span>
+    </h1>
+    <p class="sub">
+      <span data-lang="en">
+        I build firmware, drivers, and distributed systems that connect physical hardware — motors, cameras,
+        sensors, microcontrollers — to networks, machine learning models, and the software that has to
+        control them reliably. <strong>Working across ESP32, Teensy, and Raspberry Pi</strong> at
+        SAT / IDMIL, Montréal. [One line here on what you're presenting or why you're at the conference.]
+      </span>
+      <span data-lang="fr" hidden>
+        Je conçois des firmwares, des pilotes et des systèmes distribués qui relient du matériel physique —
+        moteurs, caméras, capteurs, microcontrôleurs — à des réseaux, des modèles d'apprentissage automatique
+        et les logiciels qui doivent les contrôler de manière fiable. <strong>Je travaille avec ESP32, Teensy
+        et Raspberry Pi</strong> à la SAT / IDMIL, Montréal. [Une ligne ici sur ce que vous présentez ou la
+        raison de votre présence au congrès.]
+      </span>
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="portfolio.html">
+        <span data-lang="en">See the full portfolio</span>
+        <span data-lang="fr" hidden>Voir le portfolio complet</span>
+      </a>
+      <a class="btn btn-secondary" href="#contact">
+        <span data-lang="en">Get in touch</span>
+        <span data-lang="fr" hidden>Me contacter</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="highlights" id="highlights">
+  <div class="wrap">
+    <h2 class="eyebrow">
+      <span data-lang="en">Some of what I work on</span>
+      <span data-lang="fr" hidden>Quelques-uns de mes projets</span>
+    </h2>
+    <div class="card-grid">
+
+      <div class="card">
+        <h3>Puara — embedded framework</h3>
+        <p>
+          <span data-lang="en">Open-source C++ framework for networked ESP32 musical controllers: WiFi,
+          a browser-based settings server, and gesture recognition, reconfigurable from a browser with no
+          reflashing. Used and forked by outside researchers and students.</span>
+          <span data-lang="fr" hidden>Framework C++ open source pour des contrôleurs musicaux ESP32 en
+          réseau : WiFi, serveur de réglages basé sur navigateur et reconnaissance de gestes, reconfigurable
+          depuis un navigateur sans reflashage. Utilisé et forké par des chercheurs et étudiants externes.</span>
+        </p>
+        <div class="tag-row">
+          <span class="tag">C++</span><span class="tag">ESP32</span><span class="tag">OSC</span>
+        </div>
+        <div class="doc-link">
+          <span data-lang="en"><a href="puara_ecosystem_architecture_en.html">Read the architecture write-up →</a></span>
+          <span data-lang="fr" hidden><a href="puara_ecosystem_architecture_fr.html">Lire la note d'architecture →</a></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span data-lang="en">Networked kinetic pendulum</span>
+          <span data-lang="fr" hidden>Pendule cinétique en réseau</span>
+        </h3>
+        <p>
+          <span data-lang="en">Closed-loop control firmware for a multi-segment kinetic installation: four
+          independent Teensy 4.1 controllers with encoder feedback, safety interlocks, and crash-safe
+          recovery.</span>
+          <span data-lang="fr" hidden>Firmware de contrôle en boucle fermée pour une installation cinétique à
+          segments multiples : quatre contrôleurs Teensy 4.1 indépendants avec rétroaction d'encodeurs,
+          verrouillages de sécurité et récupération après panne.</span>
+        </p>
+        <div class="tag-row">
+          <span class="tag">Teensy 4.1</span><span class="tag">OSC</span><span class="tag">real-time control</span>
+        </div>
+        <div class="doc-link">
+          <span data-lang="en"><a href="pendulum_architecture_en.html">Read the architecture write-up →</a></span>
+          <span data-lang="fr" hidden><a href="pendulum_architecture_fr.html">Lire la note d'architecture →</a></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span data-lang="en">Realtime latent-space synthesis</span>
+          <span data-lang="fr" hidden>Synthèse en temps réel dans l'espace latent</span>
+        </h3>
+        <p>
+          <span data-lang="en">Realtime neural audio synthesis (RAVE, via nn~) on a Raspberry Pi 5, with the
+          model's latent space steered live by hand-gesture tracking or a MIDI controller.</span>
+          <span data-lang="fr" hidden>Synthèse audio neuronale en temps réel (RAVE, via nn~) sur un Raspberry
+          Pi 5, avec l'espace latent du modèle piloté en direct par suivi de gestes ou par contrôleur MIDI.</span>
+        </p>
+        <div class="tag-row">
+          <span class="tag">Raspberry Pi 5</span><span class="tag">neural audio</span><span class="tag">OSC</span>
+        </div>
+        <div class="doc-link">
+          <a href="https://github.com/cbicari/latent_space_synthesis" target="_blank" rel="noopener" class="mono">latent_space_synthesis</a> ·
+          <span data-lang="en"><a href="latent_space_synthesis_architecture_en.html">architecture write-up</a></span>
+          <span data-lang="fr" hidden><a href="latent_space_synthesis_architecture_fr.html">note d'architecture</a></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span data-lang="en">Vieux Néant — modular instrument</span>
+          <span data-lang="fr" hidden>Vieux Néant — instrument modulaire</span>
+        </h3>
+        <p>
+          <span data-lang="en">A 20-module Eurorack drum and texture instrument for improvisation-based
+          experimental electronic music, designed against a hard power and space budget.</span>
+          <span data-lang="fr" hidden>Un instrument de percussion et de texture Eurorack à 20 modules pour la
+          musique électronique expérimentale basée sur l'improvisation, conçu selon un budget strict de
+          puissance et d'espace.</span>
+        </p>
+        <div class="tag-row">
+          <span class="tag">Eurorack</span><span class="tag">signal routing</span><span class="tag">synthesis</span>
+        </div>
+        <div class="doc-link">
+          <span data-lang="en"><a href="vieux_neant_architecture_en.html">Read the architecture write-up →</a></span>
+          <span data-lang="fr" hidden><a href="vieux_neant_architecture_fr.html">Lire la note d'architecture →</a></span>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="more-link mono">
+      <span data-lang="en"><a href="portfolio.html">→ 5 more projects in the full portfolio</a></span>
+      <span data-lang="fr" hidden><a href="portfolio.html">→ 5 autres projets dans le portfolio complet</a></span>
+    </p>
+  </div>
+</section>
+
+<footer class="site" id="contact">
+  <div class="wrap">
+    <p>
+      <span data-lang="en">
+        Around for [Conference Name] — happy to talk embedded systems, edge AI, or interactive installations.
+        Reach out or find me at [booth / session / social event].
+      </span>
+      <span data-lang="fr" hidden>
+        De passage pour [Nom du congrès] — avec plaisir pour discuter systèmes embarqués, IA embarquée ou
+        installations interactives. Écrivez-moi ou retrouvez-moi à [kiosque / session / événement social].
+      </span>
+    </p>
+    <div class="contact">
+      <a href="mailto:your.email@example.com">your.email@example.com</a>
+      <a href="https://github.com/cbicari" target="_blank" rel="noopener">github.com/cbicari</a>
+      <a href="#">linkedin.com/in/your-profile</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/bg-canvas.js" defer></script>
+<script src="assets/i18n.js" defer></script>
+
+</body>
+</html>

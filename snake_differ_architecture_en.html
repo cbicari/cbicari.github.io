@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>snake_differ — Architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="snake_differ_architecture_fr.html">Français</a>
+</div>
+
+<h1>snake_differ</h1>
+<p class="subtitle">Architecture overview — Puara module for the Seeed XIAO ESP32-S3 Sense</p>
+
+<h2>Purpose</h2>
+<p>
+A motion-detection firmware that watches a camera feed, computes frame-by-frame pixel differences, and
+broadcasts the results as OSC messages over WiFi — so a DAW, synthesizer, or generative environment can react
+to the presence, position, and shape of moving objects in the frame. It was built for tracking dark shapes
+(kinetic coil sculptures) on a light background, but works for any dark-on-light motion source.
+</p>
+
+<h2>Hardware</h2>
+<table>
+  <tr><th></th><th></th></tr>
+  <tr><td>Board</td><td>Seeed XIAO ESP32-S3 Sense</td></tr>
+  <tr><td>Camera</td><td>OV2640 (onboard)</td></tr>
+  <tr><td>Microphone</td><td>PDM (onboard, GPIO 41/42)</td></tr>
+  <tr><td>Motor outputs</td><td>D2 = GPIO 3, D3 = GPIO 4 (PWM, 1 kHz, 10-bit)</td></tr>
+  <tr><td>Connection</td><td>WiFi 2.4 GHz</td></tr>
+  <tr><td>Power</td><td>USB-C</td></tr>
+</table>
+<p>No wiring is required for the camera or mic; motor outputs need an external driver for anything beyond a
+small signal.</p>
+
+<h2>System overview</h2>
+<p>
+The camera and microphone feed the firmware, which either streams an OSC bundle out to receiving software,
+or serves a small web interface (with a live MJPEG preview) in a browser for calibrating the camera before a
+show. Both paths share the same WiFi connection and the same on-device settings store.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 380" role="img">
+<title>snake_differ system overview</title>
+<desc>The onboard camera and microphone feed the ESP32-S3 firmware, which either streams an OSC bundle over WiFi to receiving software, or serves a web interface and MJPEG preview in a browser for calibration before a show.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">OV2640 camera + PDM mic</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Onboard, QVGA grayscale ~30 fps</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">snake_differ firmware</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Puara module on ESP32-S3</text>
+<path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a1)"/>
+<path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a1)"/>
+<rect class="box-coral" x="70" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="212" text-anchor="middle">OSC bundle out</text>
+<text class="subtitle-svg" x="175" y="230" text-anchor="middle">UDP, ~30 Hz</text>
+<rect class="box-teal" x="400" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="212" text-anchor="middle">Web UI + MJPEG preview</text>
+<text class="subtitle-svg" x="505" y="230" text-anchor="middle">Ports 80 / 81</text>
+<line class="arrow" x1="175" y1="246" x2="175" y2="280" marker-end="url(#a1)"/>
+<line class="arrow" x1="505" y1="246" x2="505" y2="280" marker-end="url(#a1)"/>
+<rect class="box-amber" x="70" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="304" text-anchor="middle">Receiving software</text>
+<text class="subtitle-svg" x="175" y="322" text-anchor="middle">DAW, Max/MSP, Logic, Protokol</text>
+<rect class="box-amber" x="400" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="304" text-anchor="middle">Browser</text>
+<text class="subtitle-svg" x="505" y="322" text-anchor="middle">Config, scan, settings, preview</text>
+<text class="note" x="340" y="365" text-anchor="middle">Both paths share the same WiFi connection and settings storage</text>
+</svg>
+<figcaption>System overview: sensors → firmware → OSC output or calibration web UI</figcaption>
+</div>
+
+<h2>Firmware task structure</h2>
+<p>
+Internally, three concurrent pieces of code — two FreeRTOS tasks plus the Arduino main loop — share state
+through mutex-protected structs:
+</p>
+<ol>
+  <li><strong>Camera task (~30 fps)</strong> — for every frame, a single pixel-by-pixel pass computes two
+  independent sets of metrics at once:
+    <ul>
+      <li><strong>Diff metrics</strong>: compares the current frame to the previous one; pixels changed by
+      more than <code>diffThreshold</code> count as "in motion." From those pixels it derives a bounding box,
+      centroid, frame-to-frame velocity, spread (standard deviation around the centroid), fill ratio (motion
+      density inside the bounding box), and overall magnitude (fraction of the frame moving).</li>
+      <li><strong>Pixel metrics</strong>: independent of motion, any pixel darker than
+      <code>pixThreshold</code> counts as "dark coil material." This gives a global coverage fraction and
+      centroid of dark mass, plus three values per zone across a 6×4 grid of 24 zones: dark-pixel coverage,
+      edge/gradient density (a proxy for how tightly the coils are wound), and local brightness variance
+      (texture richness).</li>
+    </ul>
+  </li>
+  <li><strong>Mic task (~100 Hz)</strong> — reads 512 PDM samples at 16 kHz, computes RMS, and applies a
+  linear <code>micGain</code> clamped to 1.0.</li>
+  <li><strong>Main loop (~30 Hz)</strong> — reads both metric sets under their locks, applies <strong>latch
+  behaviour</strong> (most spatial values hold their last known state when the scene goes still, rather than
+  snapping to zero; velocity, motion flag, and microphone RMS are always live), then either:
+    <ul>
+      <li>builds and sends the outgoing OSC bundle over UDP, or</li>
+      <li>parses any incoming OSC message and updates the diff threshold or drives the motor PWM outputs
+      accordingly.</li>
+    </ul>
+  </li>
+</ol>
+<p>The web server (port 80, from the Puara module) and the optional MJPEG snapshot server (port 81) run
+independently of this loop, reading the latest raw frame and current settings as needed.</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>snake_differ firmware task structure</title>
+<desc>Two concurrent FreeRTOS tasks compute camera-derived and microphone-derived metrics into mutex-protected shared state. The main Arduino loop reads that state at about 30 Hz, applies latch behaviour, and either sends the OSC bundle out over UDP or, on incoming OSC, drives the motor PWM outputs.</desc>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-purple" x="70" y="20" width="250" height="56" rx="8"/>
+<text class="title" x="195" y="42" text-anchor="middle">Camera task (~30 fps)</text>
+<text class="subtitle-svg" x="195" y="60" text-anchor="middle">Single-pass diff + pixel analysis</text>
+<rect class="box-purple" x="360" y="20" width="250" height="56" rx="8"/>
+<text class="title" x="485" y="42" text-anchor="middle">Mic task (~100 Hz)</text>
+<text class="subtitle-svg" x="485" y="60" text-anchor="middle">PDM read, RMS with gain</text>
+<path class="arrow" d="M195 76 L195 93 L340 93 L340 108" marker-end="url(#a2)"/>
+<path class="arrow" d="M485 76 L485 93 L340 93 L340 108" marker-end="url(#a2)"/>
+<rect class="box" x="220" y="110" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="132" text-anchor="middle">Shared metrics</text>
+<text class="subtitle-svg" x="340" y="150" text-anchor="middle">Mutex-protected diff/pixel/mic state</text>
+<line class="arrow" x1="340" y1="166" x2="340" y2="188" marker-end="url(#a2)"/>
+<rect class="box-coral" x="220" y="190" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="212" text-anchor="middle">Main loop (~30 Hz)</text>
+<text class="subtitle-svg" x="340" y="230" text-anchor="middle">Applies latch, builds OSC bundle</text>
+<path class="arrow" d="M340 246 L340 263 L175 263 L175 280" marker-end="url(#a2)"/>
+<path class="arrow" d="M340 246 L340 263 L505 263 L505 280" marker-end="url(#a2)"/>
+<rect class="box-teal" x="70" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="304" text-anchor="middle">OSC bundle out</text>
+<text class="subtitle-svg" x="175" y="322" text-anchor="middle">UDP to oscIP:oscPORT</text>
+<rect class="box-amber" x="400" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="304" text-anchor="middle">Incoming OSC</text>
+<text class="subtitle-svg" x="505" y="322" text-anchor="middle">threshold, motor1, motor2</text>
+<line class="arrow" x1="505" y1="338" x2="505" y2="360" marker-end="url(#a2)"/>
+<text class="note" x="505" y="378" text-anchor="middle">Drives motor PWM (D2/D3)</text>
+</svg>
+<figcaption>Firmware task structure: concurrent tasks, shared state, and the main loop</figcaption>
+</div>
+
+<h2>Settings reference</h2>
+<p>All settings live on the <strong>Settings</strong> web page, apply immediately without reflashing, and
+persist across reboots.</p>
+<table>
+  <tr><th>Parameter</th><th>Default</th><th>Notes</th></tr>
+  <tr><td><code>oscIP</code></td><td><code>192.168.4.2</code></td><td>IP of the computer receiving OSC</td></tr>
+  <tr><td><code>oscPORT</code></td><td><code>8000</code></td><td>UDP port the receiver listens on</td></tr>
+  <tr><td><code>localPORT</code></td><td><code>8000</code></td><td>UDP port the device listens on for incoming OSC</td></tr>
+  <tr><td><code>diffThreshold</code></td><td><code>30</code></td><td>Pixel brightness delta (0–255) that counts as motion; lower = more sensitive</td></tr>
+  <tr><td><code>videoStream</code></td><td><code>0</code></td><td>Set to <code>1</code> to enable the MJPEG preview on port 81; disable during performance</td></tr>
+  <tr><td><code>camContrast</code></td><td><code>0</code></td><td>OV2640 hardware contrast, range -2 to 2; higher helps dark shapes stand out</td></tr>
+  <tr><td><code>micGain</code></td><td><code>10</code></td><td>Linear gain on raw mic RMS, clamped to 1.0; practical range 1–100</td></tr>
+  <tr><td><code>pixThreshold</code></td><td><code>100</code></td><td>Absolute brightness (0–255) below which a pixel counts as dark coil material</td></tr>
+</table>
+
+<h2>OSC reference</h2>
+<h3>Outgoing bundle — ~30 Hz</h3>
+<p>Sent as a single OSC bundle to <code>oscIP:oscPORT</code>; always contains all messages below. Device
+name comes from <code>config.json</code> (default <code>snake_differ_0</code>).</p>
+<table>
+  <tr><th>Address</th><th>Args</th><th>Latch</th><th>Description</th></tr>
+  <tr><td><code>/&lt;device&gt;/motion</code></td><td>motion (int), magnitude (float)</td><td>mag only</td><td>Current motion state and fraction of frame moving</td></tr>
+  <tr><td><code>/&lt;device&gt;/bbox</code></td><td>x_min, y_min, x_max, y_max (float×4)</td><td>yes</td><td>Bounding box of motion, normalised 0–1</td></tr>
+  <tr><td><code>/&lt;device&gt;/centroid</code></td><td>cx, cy (float×2)</td><td>yes</td><td>Centre of mass of moving pixels, normalised</td></tr>
+  <tr><td><code>/&lt;device&gt;/velocity</code></td><td>vx, vy (float×2)</td><td><strong>no</strong></td><td>Centroid displacement per frame; zero when still</td></tr>
+  <tr><td><code>/&lt;device&gt;/spread</code></td><td>sx, sy (float×2)</td><td>yes</td><td>Std deviation of motion pixels around centroid</td></tr>
+  <tr><td><code>/&lt;device&gt;/fill</code></td><td>fill (float)</td><td>yes</td><td>Motion density inside the bounding box</td></tr>
+  <tr><td><code>/&lt;device&gt;/mic</code></td><td>rms (float)</td><td><strong>no</strong></td><td>Onboard mic RMS, normalised 0–1, independent of visual motion</td></tr>
+  <tr><td><code>/&lt;device&gt;/coverage</code></td><td>coverage (float)</td><td><strong>no</strong></td><td>Fraction of the whole frame below <code>pixThreshold</code></td></tr>
+  <tr><td><code>/&lt;device&gt;/mass</code></td><td>cx, cy (float×2)</td><td><strong>no</strong></td><td>Centroid of all dark pixels, tracks coil mass even at rest</td></tr>
+  <tr><td><code>/&lt;device&gt;/grid/coverage</code></td><td>24 floats</td><td><strong>no</strong></td><td>Dark-pixel fraction per zone (6×4, row-major, row 0 = top)</td></tr>
+  <tr><td><code>/&lt;device&gt;/grid/density</code></td><td>24 floats</td><td><strong>no</strong></td><td>Edge/gradient magnitude per zone — coil tightness</td></tr>
+  <tr><td><code>/&lt;device&gt;/grid/texture</code></td><td>24 floats</td><td><strong>no</strong></td><td>Local variance per zone — texture richness</td></tr>
+</table>
+
+<h3>Incoming messages</h3>
+<table>
+  <tr><th>Address</th><th>Arg</th><th>Description</th></tr>
+  <tr><td><code>/snake_differ/threshold</code></td><td>fraction (float)</td><td>Updates <code>diffThreshold</code> live; value is a fraction of 255</td></tr>
+  <tr><td><code>/snake_differ/motor1</code></td><td>speed (int 0–1000)</td><td>PWM duty on D2 / GPIO 3</td></tr>
+  <tr><td><code>/snake_differ/motor2</code></td><td>speed (int 0–1000)</td><td>PWM duty on D3 / GPIO 4</td></tr>
+</table>
+
+<h2>First-time setup</h2>
+<h3>1. Flash the firmware (PlatformIO)</h3>
+<pre><code>pio run --target upload
+pio run --target uploadfs</code></pre>
+<p>Requires the <code>pioarduino</code> platform (ESP32 Arduino 3.x) — the standard PlatformIO ESP32 2.x
+platform has a known crash in UDP receive; <code>platformio.ini</code> already points at the correct
+platform.</p>
+
+<h3>2. Connect to the device's WiFi</h3>
+<p>On first boot (or with no router configured), the device creates its own access point (SSID
+<code>snake_differ_0</code>, password <code>garnetwillis</code>).</p>
+
+<h3>3. Open the web interface</h3>
+<p><code>http://snake_differ_0.local</code> (fallback: the AP's default IP, <code>192.168.4.1</code>, or
+whatever the serial monitor shows). Config / Scan / Settings pages are all there.</p>
+
+<h3>4. Optionally join a studio router</h3>
+<p>On the Config page, enter router SSID/password and Save; the device connects on next reboot and the AP
+stays active as a fallback.</p>
+
+<h2>Calibration workflow</h2>
+<ol>
+  <li>Position the device so the camera sees the full area of interest.</li>
+  <li>Set <code>videoStream = 1</code>, open Config, check framing.</li>
+  <li>Adjust <code>camContrast</code> until the tracked shape reads clearly darker than the background.</li>
+  <li>With the scene still, watch the serial monitor (<code>pio device monitor</code>) for continuous
+  <code>[diff] no motion</code>.</li>
+  <li>Move the shape — <code>[diff] mag=...</code> lines should appear immediately.</li>
+  <li>Tune <code>diffThreshold</code> until detection is clean with minimal noise.</li>
+  <li>Set <code>videoStream = 0</code>, enter <code>oscIP</code>/<code>oscPORT</code>, Save.</li>
+  <li>Confirm the bundle arrives at ~30 Hz in Protokol or the intended receiver.</li>
+</ol>
+
+<h2>Receiving OSC</h2>
+<ul>
+  <li><strong><a href="https://hexler.net/protokol">Protokol</a></strong> — fastest way to confirm the device
+  is sending: add a UDP listener on port 8000 and watch the bundle arrive.</li>
+  <li><strong>Max/MSP</strong> — <code>udpreceive 8000</code> → <code>OSC-route /&lt;device&gt;/motion
+  /&lt;device&gt;/bbox ...</code> → <code>unpack</code> per message.</li>
+  <li><strong>Logic Pro</strong> (no native OSC) — bridge via Max/MSP → IAC Driver → Logic (enable IAC
+  Driver, map OSC values to MIDI CC in Max, then MIDI-learn them in Logic's Smart Controls or a plugin), or
+  use TouchOSC to forward OSC as MIDI CC without needing Max.</li>
+</ul>
+
+<h2>Camera preview</h2>
+<p>
+When <code>videoStream = 1</code>, an MJPEG stream is served at <code>http://&lt;device_ip&gt;:81/stream</code>
+(also embedded directly in the Config page) using a single persistent multipart HTTP connection — no
+polling, no per-frame round-trip. Preview is the same grayscale frame used for diff computation, and
+<code>camContrast</code> affects both. <strong>Turn <code>videoStream</code> off before a show</strong> —
+JPEG encoding runs continuously while a client is connected.
+</p>
+
+<h2>Technical notes</h2>
+<ul>
+  <li>Diff + pixel analysis + OSC rate: ~30 fps / ~30 Hz</li>
+  <li>Frame format: QVGA 320×240 grayscale — 76,800 pixels processed per frame, single pass</li>
+  <li>Analysis grid: 6×4 = 24 zones (~80×60 px each); zone index = row × 6 + col, row 0 = top, col 0 = left</li>
+  <li>Mic: PDM 16 kHz, RMS over 512 samples, ~100 Hz update</li>
+  <li>Motor PWM: 1 kHz, 10-bit (0–1023 range; 0–1000 input maps directly)</li>
+  <li>PSRAM: 8 MB used for frame buffers; firmware logs an error and skips camera init if unavailable</li>
+  <li>Port 80: Puara web interface; port 81: MJPEG stream (<code>/stream</code>), only active when
+  <code>videoStream = 1</code></li>
+  <li>Platform: <code>pioarduino</code> (ESP32 Arduino 3.x) required</li>
+</ul>
+
+<h2>Built with</h2>
+<ul>
+  <li><a href="https://github.com/Puara/puara-module">Puara Module</a> — WiFi, webserver, filesystem, settings management</li>
+  <li><a href="https://github.com/cnmat/OSC">CNMAT OSC</a> — OSC encode/decode</li>
+  <li>ESP32 Arduino / ESP-IDF — camera driver, I2S PDM, LEDC PWM</li>
+</ul>
+
+<footer>
+Société des Arts Technologiques (SAT) — Montréal<br>
+Input Devices and Music Interaction Laboratory (IDMIL), McGill University
+</footer>
+
+</body>
+</html>

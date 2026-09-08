@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framework Puara — Vue d'ensemble de l'architecture de l'écosystème</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Retour au portfolio</a>
+  <a href="puara_ecosystem_architecture_en.html">English</a>
+</div>
+
+<h1>Framework Puara</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture de l'écosystème — projets :
+  <a href="https://github.com/Puara/puara-module">puara-module</a>,
+  <a href="https://github.com/Puara/puara-module-templates">puara-module-templates</a>,
+  <a href="https://github.com/Puara/puara-arduino">puara-arduino</a>,
+  <a href="https://github.com/Puara/puara-gestures">puara-gestures</a>
+</p>
+<p class="subtitle">Développé par la Société des Arts Technologiques (SAT) et le Input Devices and Music
+Interaction Laboratory (IDMIL)</p>
+
+<h2>Objectif</h2>
+<p>
+Puara est un framework pour construire des contrôleurs musicaux en réseau et des installations interactives
+sur des cartes ESP32. Plutôt qu'un seul dépôt, c'est un écosystème de quatre dépôts aux rôles distincts et
+complémentaires : une bibliothèque centrale pour l'appareil, une bibliothèque de capteurs vers gestes, et
+deux conditionnements spécifiques à l'IDE de firmwares d'exemple prêts à flasher, construits par-dessus les
+deux.
+</p>
+
+<h2>Vue d'ensemble de l'écosystème</h2>
+<ul>
+  <li><strong><a href="https://github.com/Puara/puara-module">puara-module</a></strong> — la bibliothèque
+  C++ centrale. Gère le WiFi (station/point d'accès), un serveur web accessible par navigateur, et un
+  stockage de paramètres appuyé sur le système de fichiers, afin qu'un appareil puisse être configuré et
+  reconfiguré depuis un navigateur sans recompiler ni reflasher le firmware.</li>
+  <li><strong><a href="https://github.com/Puara/puara-gestures">puara-gestures</a></strong> — une
+  bibliothèque C++ séparée et indépendante qui transforme les signaux de capteurs bruts
+  (accéléromètre/IMU, matrices tactiles, boutons) en descripteurs de gestes de plus haut niveau (jab,
+  secousse, inclinaison/roulis, glissement/balayage tactile, appui/maintien de bouton). Elle ne dépend pas de
+  <code>puara-module</code> et peut être utilisée seule dans n'importe quel projet C++.</li>
+  <li><strong><a href="https://github.com/Puara/puara-module-templates">puara-module-templates</a></strong>
+  — des modèles de projet PlatformIO qui combinent <code>puara-module</code> (et, le cas échéant,
+  <code>puara-gestures</code>, la bibliothèque OSC de CNMAT, le BLE, ou libmapper) en huit appareils
+  d'exemple prêts à compiler, pour VS Code + PlatformIO.</li>
+  <li><strong><a href="https://github.com/Puara/puara-arduino">puara-arduino</a></strong> — les mêmes
+  exemples sous-jacents, tenus synchronisés avec <code>puara-module-templates</code>, mais conditionnés en
+  tant que sketchs Arduino distribués via la bibliothèque Arduino <code>puara-module</code>
+  (<code>File &gt; Examples &gt; puara-module</code>) pour l'IDE Arduino 2.0. Propose actuellement cinq des
+  huit modèles (basic, OSC-Send, OSC-Receive, OSC-Duplex, BLE advertising).</li>
+</ul>
+
+<h2>Comment les dépôts s'articulent</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 340" role="img">
+<title>Vue d'ensemble de l'écosystème du framework Puara</title>
+<desc>Les bibliothèques centrales puara-module et puara-gestures sont conditionnées en deux ensembles synchronisés de modèles prêts à flasher, l'un pour PlatformIO et l'autre pour l'IDE Arduino, qui produisent ensemble un appareil ESP32 flashé.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="220" y="20" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Bibliothèques centrales</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">puara-module + puara-gestures</text>
+<path class="arrow" d="M340 76 L340 93 L175 93 L175 110" marker-end="url(#a1f)"/>
+<path class="arrow" d="M340 76 L340 93 L505 93 L505 110" marker-end="url(#a1f)"/>
+<rect class="box-purple" x="70" y="110" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="132" text-anchor="middle">puara-module-templates</text>
+<text class="subtitle-svg" x="175" y="150" text-anchor="middle">PlatformIO + VS Code</text>
+<rect class="box-purple" x="400" y="110" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="132" text-anchor="middle">puara-arduino</text>
+<text class="subtitle-svg" x="505" y="150" text-anchor="middle">IDE Arduino 2.0</text>
+<text class="note" x="340" y="188" text-anchor="middle">Tenus synchronisés : mêmes modèles, deux IDE</text>
+<line class="arrow" x1="175" y1="166" x2="175" y2="210" marker-end="url(#a1f)"/>
+<line class="arrow" x1="505" y1="166" x2="505" y2="210" marker-end="url(#a1f)"/>
+<path class="arrow" d="M175 210 L175 222 L340 222" marker-end="url(#a1f)"/>
+<path class="arrow" d="M505 210 L505 222 L340 222" marker-end="url(#a1f)"/>
+<rect class="box-amber" x="240" y="224" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="246" text-anchor="middle">Appareil ESP32 flashé</text>
+<text class="subtitle-svg" x="340" y="264" text-anchor="middle">Firmware + système de fichiers téléversés</text>
+<text class="note" x="340" y="310" text-anchor="middle">Firmware et système de fichiers (config.json, settings.json, pages web)</text>
+<text class="note" x="340" y="328" text-anchor="middle">sont compilés et téléversés en deux étapes distinctes</text>
+</svg>
+<figcaption>Deux bibliothèques centrales, deux conditionnements IDE synchronisés, un appareil</figcaption>
+</div>
+<p>
+<code>puara-module</code> et <code>puara-gestures</code> sont les deux bibliothèques centrales —
+indépendantes l'une de l'autre, chacune utilisable seule. Les deux dépôts de modèles consomment toutes deux
+ces bibliothèques pour produire des projets d'exemple prêts à flasher, un conditionnement pour chaque chaîne
+d'outils prise en charge ; les projets sont maintenus équivalents entre les deux afin qu'une personne puisse
+suivre soit le chemin PlatformIO soit le chemin Arduino et obtenir le même comportement. Les deux chemins se
+terminent de la même façon : compiler et téléverser le firmware, puis séparément compiler et téléverser
+l'image du système de fichiers (LittleFS par défaut, SPIFFS en option), sur une carte ESP32 physique.
+</p>
+
+<h2>Fonctionnement en direct sur l'appareil, commun à chaque modèle</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 380" role="img">
+<title>Fonctionnement en direct partagé par chaque modèle Puara</title>
+<desc>Chaque modèle Puara suit la même forme d'exécution : démarrer le WiFi en station, point d'accès, ou les deux, servir un serveur web de configuration et de réglages basé sur le système de fichiers, exécuter la boucle du programme utilisateur qui lit les capteurs et calcule éventuellement des descripteurs de gestes, et envoyer ou recevoir de l'OSC ou du BLE, avec des changements de réglages appliqués en direct sans reflashage.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Démarrage WiFi</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">STA-AP, AP seul, ou STA seul</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Serveur web (LittleFS)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Pages Config, Scan et Settings</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Boucle du programme utilisateur</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Capteurs, puara-gestures en option</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Sortie OSC / BLE</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Envoi/réception OSC CNMAT ou advertising BLE</text>
+<text class="note" x="340" y="335" text-anchor="middle">onSettingsChanged() applique les nouveaux réglages en direct,</text>
+<text class="note" x="340" y="353" text-anchor="middle">sans recompilation ni reflashage</text>
+</svg>
+<figcaption>La forme d'exécution partagée par chaque modèle Puara</figcaption>
+</div>
+<ol>
+  <li><strong>Démarrage WiFi</strong> — au démarrage, le gestionnaire de module lit <code>config.json</code>
+  depuis le système de fichiers et tente l'un des trois modes : <strong>Station-Point d'accès (STA-AP)</strong>,
+  le défaut, où l'appareil rejoint à la fois un réseau existant et crée le sien ; <strong>Point d'accès
+  (AP) seul</strong>, où il ne crée que son propre réseau ; ou <strong>Station (STA) seule</strong>
+  (<code>persistent_AP=0</code>), où il ne rejoint qu'un réseau existant et n'annonce jamais le sien, utile
+  pour réduire la pollution WiFi et renforcer la sécurité.</li>
+  <li><strong>Serveur web</strong> — un serveur accessible par navigateur expose les pages Config, Scan et
+  Settings, accessibles soit par adresse IP (p. ex. <code>http://192.168.4.1</code> en mode AP, ou l'adresse
+  issue de <code>puara.staIP()</code> en mode STA/STA-AP), soit, si le mDNS est activé (par défaut), par nom
+  d'hôte (p. ex. <code>http://puara_001.local</code>). Via cette interface, les valeurs définies dans
+  <code>/data/settings.json</code> peuvent être modifiées et persistent au redémarrage, et sont lues dans le
+  code avec <code>puara.getVarText("nom")</code> / <code>puara.getVarNumber("nom")</code>.</li>
+  <li><strong>Boucle du programme utilisateur</strong> — la propre logique du sketch s'exécute ici : lecture
+  des capteurs, passage optionnel par les descripteurs <code>puara-gestures</code>, et réaction aux
+  événements.</li>
+  <li><strong>Sortie OSC / BLE</strong> — selon le modèle, cette étape envoie les données de capteurs ou de
+  gestes sous forme de messages OSC (via la bibliothèque OSC de CNMAT), reçoit de l'OSC entrant pour
+  contrôler des sorties, ou diffuse des données sans connexion via l'advertising BLE.</li>
+</ol>
+<p>
+Un callback <code>onSettingsChanged()</code> enregistré relit les paramètres mis à jour chaque fois que
+l'utilisateur enregistre des modifications via l'interface web, de sorte que des paramètres comme l'IP/port
+OSC prennent effet immédiatement sans recompilation.
+</p>
+<p>
+<strong>Le firmware et le système de fichiers sont deux téléversements distincts.</strong> Le firmware est
+la logique de programme compilée ; le système de fichiers (LittleFS/SPIFFS) contient <code>config.json</code>,
+<code>settings.json</code>, et le HTML/CSS de l'interface web — les deux doivent être compilés et
+téléversés (PlatformIO : <code>Upload Filesystem Image</code> + <code>Upload</code> ; IDE Arduino : la
+commande <code>Upload LittleFS to Pico/ESP8266/ESP32</code> du plugin
+<a href="https://github.com/earlephilhower/arduino-littlefs-upload">Arduino-LittleFS-Upload</a>, plus le
+téléversement normal du sketch).
+</p>
+
+<h2>Modèles / exemples disponibles</h2>
+<p><code>puara-module-templates</code> (PlatformIO) et <code>puara-arduino</code> (IDE Arduino) proposent
+tous deux les mêmes exemples sous-jacents ; le tableau ci-dessous indique lesquels sont actuellement
+disponibles dans chacun.</p>
+<table>
+  <tr><th>Modèle</th><th>Ce qu'il démontre</th><th>Dans templates</th><th>Dans arduino</th></tr>
+  <tr><td>Basic</td><td>Fonctionnalité de base : lit les réglages, affiche des données factices sur le port série</td><td>✅</td><td>✅</td></tr>
+  <tr><td>OSC-Send</td><td>Envoie des données de capteur en OSC vers une IP/port configurable</td><td>✅</td><td>✅</td></tr>
+  <tr><td>OSC-Receive</td><td>Reçoit de l'OSC (p. ex. <code>/led/brightness f 0.34</code>) et pilote une sortie</td><td>✅</td><td>✅</td></tr>
+  <tr><td>OSC-Duplex</td><td>Combine OSC-Send et OSC-Receive dans un seul sketch</td><td>✅</td><td>✅</td></tr>
+  <tr><td>BLE advertising</td><td>Diffuse des données encodées en CBOR via l'advertising BLE, sans connexion</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Basic Gestures</td><td>Étend Basic avec la reconnaissance de gestes puara-gestures sur un pseudo-IMU</td><td>✅</td><td>—</td></tr>
+  <tr><td>Button OSC</td><td>Détection d'appui/double-appui/maintien via puara-gestures, envoyée en OSC</td><td>✅</td><td>—</td></tr>
+  <tr><td>Libmapper OSC</td><td>Enregistre des signaux auprès de libmapper en parallèle de l'OSC</td><td>✅</td><td>—</td></tr>
+</table>
+
+<h2>Puara Gestures : descripteurs et utilitaires</h2>
+<p>
+<code>puara-gestures</code> est volontairement découplé du réseau ou des spécificités matérielles — il
+transforme simplement des flux numériques de capteurs en signaux en forme de geste :
+</p>
+<table>
+  <tr><th>Descripteur</th><th>Fonction</th></tr>
+  <tr><td><code>Jab</code>, <code>Jab2D</code>, <code>Jab3D</code></td><td>Détecteurs simples de rafale de mouvement sur 1, 2 ou 3 axes</td></tr>
+  <tr><td><code>Shake</code>, <code>Shake2D</code>, <code>Shake3D</code></td><td>Suivi lissé de l'énergie de mouvement pour vibration/secousse, avec seuil et décroissance</td></tr>
+  <tr><td><code>Tilt</code>, <code>Roll</code></td><td>Signaux d'orientation à partir de données IMU 9DoF complètes</td></tr>
+  <tr><td><code>Tilt_Roll</code></td><td>Roulis/inclinaison rapide à partir de l'accéléromètre seul</td></tr>
+  <tr><td><code>TouchArrayGestureDetector</code></td><td>Fonctionnalités de glissement/frottement et balayage pour matrices tactiles</td></tr>
+  <tr><td><code>Button</code></td><td>Suivi d'appui, double-appui, maintien et comptage d'appuis depuis une entrée numérique</td></tr>
+</table>
+<p>Utilitaires <code>utils/</code> en support : <code>rollingminmax</code> (min/max glissant),
+<code>leakyintegrator</code> (décroissance lissée / suivi d'énergie), <code>maprange</code> (mise à l'échelle
+de plage), <code>smooth</code> (moyenne mobile), <code>threshold</code> (écrêtage), <code>wrap</code>
+(enroulement d'angle), <code>discretizer</code> (détection de changement), <code>circularbuffer</code>
+(historique de taille fixe).</p>
+<p>
+<code>puara-gestures</code> se compile de façon autonome via CMake, ou comme entrée <code>lib_deps</code>
+PlatformIO (<code>https://github.com/Puara/puara-gestures.git#v0.2.0</code>), optionnellement associé à
+<code>https://github.com/malloch/IMU_Sensor_Fusion.git</code> pour un support complet de fusion de capteurs
+IMU.
+</p>
+
+<h2>Exemple de flux de données : advertising BLE → OSC</h2>
+<p>Le modèle d'advertising BLE est le seul exemple qui traverse explicitement vers un second outil, hors dépôt :</p>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 340" role="img">
+<title>Pont d'advertising BLE vers OSC</title>
+<desc>L'exemple ble-advertising diffuse des données de capteur encodées en CBOR sous forme de paquets d'advertising BLE sans aucune connexion, qu'un script Python séparé exécuté sur un ordinateur hôte décode et transmet sous forme de messages OSC.</desc>
+<defs><marker id="a3f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">ESP32 (ble-advertising)</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Charge utile capteur encodée en CBOR</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Advertising BLE</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Sans connexion, diffusion ~50 Hz</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">ble-cbor-to-osc.py</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Script Python séparé côté hôte</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3f)"/>
+<rect class="box-amber" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Sortie OSC</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">127.0.0.1:9001 (configurable)</text>
+</svg>
+<figcaption>Diffusion BLE sans connexion, décodée et transmise en OSC</figcaption>
+</div>
+<ol>
+  <li>L'ESP32 diffuse les données de capteur sous forme de charges utiles CBOR à l'intérieur des données
+  constructeur BLE, à une fréquence configurable (50 Hz par défaut) — aucune connexion BLE n'est établie, de
+  sorte qu'un seul récepteur peut capter les données de nombreux appareils à la fois (testé avec environ
+  120 appareils sur une portée de 0 à 150 m, avec des mises à jour toutes les 500 ms).</li>
+  <li>Un script Python séparé,
+  <a href="https://gitlab.com/sat-mtl/collaborations/2024-iot/ble-cbor-to-osc"><code>ble-cbor-to-osc.py</code></a>
+  (son propre dépôt GitLab, exécuté dans son propre environnement virtuel), écoute ces annonces BLE, décode
+  la charge utile CBOR, et transmet les valeurs sous forme de messages OSC vers <code>127.0.0.1:9001</code>
+  par défaut (configurable).</li>
+</ol>
+<p>
+Ce motif — diffusion BLE sans connexion en entrée, OSC en sortie sur l'ordinateur récepteur — convient aux
+réseaux de capteurs distribués et aux installations avec de nombreux appareils simultanés à faible débit de
+données, où des connexions BLE par appareil ne passeraient pas à l'échelle.
+</p>
+
+<h2>Pour commencer</h2>
+<h3>PlatformIO (<code>puara-module-templates</code>)</h3>
+<ol>
+  <li>Installer VS Code + l'extension PlatformIO.</li>
+  <li><code>git clone https://github.com/Puara/puara-module-templates.git</code></li>
+  <li>Dans PlatformIO, « Pick a folder » et ouvrir l'un des sous-dossiers de modèles (p. ex.
+  <code>basic/</code>).</li>
+  <li>Régler le champ <code>board</code> dans <code>platformio.ini</code> pour correspondre à votre
+  matériel.</li>
+  <li>Modifier le modèle, puis <strong>Build</strong>/<strong>Upload</strong> le firmware et
+  <strong>Build</strong>/<strong>Upload Filesystem Image</strong> séparément.</li>
+</ol>
+<h3>IDE Arduino (<code>puara-arduino</code>)</h3>
+<ol>
+  <li>Installer l'IDE Arduino 2.0, le paquet de cartes ESP32 (Boards Manager → rechercher « esp32 » →
+  installer <em>Espressif Systems</em>), et le plugin
+  <a href="https://github.com/earlephilhower/arduino-littlefs-upload">Arduino-LittleFS-Upload</a>.</li>
+  <li>Installer la bibliothèque <code>puara-module</code> via le gestionnaire de bibliothèques.</li>
+  <li><code>File &gt; Examples &gt; puara-module</code> → choisir un modèle.</li>
+  <li>Régler la carte/le port, et sous <code>Tools &gt; Partition Scheme</code> choisir une option de type
+  SPIFFS minimal pour laisser assez de place au programme.</li>
+  <li>Modifier <code>data/config.json</code> (SSID/PSK WiFi) et <code>data/settings.json</code> (variables
+  personnalisées) via <code>Sketch &gt; Show Sketch Folder</code>.</li>
+  <li>Téléverser le sketch normalement, puis utiliser la commande
+  <code>Upload LittleFS to Pico/ESP8266/ESP32</code> du plugin LittleFS-Upload pour le système de fichiers.</li>
+</ol>
+
+<h2>Cartes testées</h2>
+<table>
+  <tr><th>Carte</th><th>Statut</th><th>ID PlatformIO</th><th>Carte IDE Arduino</th></tr>
+  <tr><td>M5StickC</td><td>✅</td><td><code>m5stick-c</code></td><td>M5StickC</td></tr>
+  <tr><td>TinyPICO</td><td>✅</td><td><code>tinypico</code></td><td>UM TinyPico</td></tr>
+  <tr><td>ESP32-C3-WROOM-02 / DevKitC-02</td><td>✅</td><td><code>esp32-c3-devkitc-02</code></td><td>ESP32C3 Dev Module</td></tr>
+  <tr><td>Adafruit ESP32-S3 Feather</td><td>⚠️ entrée manuelle en mode boot, série lent</td><td><code>adafruit_feather_esp32s3</code></td><td>Adafruit Feather ESP32-S3 2MB PSRAM</td></tr>
+  <tr><td>Adafruit ESP32-S3 TFT Feather</td><td>⚠️ mêmes réserves</td><td><code>adafruit_feather_esp32s3_tft</code></td><td>Adafruit Feather ESP32-S3 TFT</td></tr>
+  <tr><td>Seeed XIAO S3</td><td>⚠️ mêmes réserves</td><td><code>seeed_xiao_esp32s3</code></td><td>XIAO_ESP32S3</td></tr>
+  <tr><td>DOIT ESP32 DevKit V1</td><td>⚠️ aucune option de partition minimale dans l'IDE Arduino (fonctionne via PlatformIO)</td><td><code>esp32doit-devkit-v1</code></td><td>DOIT ESP32 DEVKIT V1</td></tr>
+</table>
+
+<h2>Licence</h2>
+<p>Les quatre dépôts sont sous licence MIT, sauf indication contraire dans un fichier spécifique.</p>
+
+</body>
+</html>

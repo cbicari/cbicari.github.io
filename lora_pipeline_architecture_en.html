@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoRA Captioning and Training — Architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="lora_pipeline_architecture_fr.html">Français</a>
+</div>
+
+<h1>LoRA Captioning and Training</h1>
+<p class="subtitle">Architecture overview — project: <strong>noukii-training</strong></p>
+
+<h2>Purpose</h2>
+<p>
+Turns a folder of raw images into a trained LoRA model with minimal manual work: an image-to-text model
+writes captions and extracts key concepts automatically, and a single script (or a small desktop UI) then
+copies the resulting dataset into <a href="https://github.com/bmaltais/kohya_ss">kohya_ss</a> and launches
+LoRA training with sensible defaults already wired up. Captioning is powered by
+<a href="https://github.com/deepseek-ai/Janus">Janus-Pro</a>, training fine-tunes Stable Diffusion 1.5.
+</p>
+
+<h2>Repository layout</h2>
+<table>
+  <tr><th>Path</th><th>Role</th></tr>
+  <tr><td><code>setup.sh</code></td><td>One-time environment setup: installs a project-local <code>uv</code>, sets up both stages' virtual environments, fetches Janus and the Janus-Pro-1B model, clones kohya_ss, downloads the SD1.5 base checkpoint</td></tr>
+  <tr><td><code>LoRA_UI_part01_CaptionScript/</code></td><td>Captioning stage: <code>janus_pro_caption_core.py</code>, <code>utils.py</code>, its own venv and <code>requirements.txt</code></td></tr>
+  <tr><td><code>LoRA_UI_part02_TrainingScript/</code></td><td>Training stage: wraps <code>kohya_ss/</code> (cloned as a subfolder), <code>config_sat_nouki.toml</code>, its own <code>requirements.txt</code></td></tr>
+  <tr><td><code>LoRA_UI/</code></td><td>Desktop UI (<code>main.py</code>, not shown here) for picking datasets/repeats and launching training, with its own venv</td></tr>
+  <tr><td><code>run_captioning.sh</code></td><td>CLI entry point for the captioning stage</td></tr>
+  <tr><td><code>run_training.sh</code></td><td>CLI entry point for the training stage</td></tr>
+  <tr><td><code>training-ui.sh</code></td><td>Launches the <code>LoRA_UI</code> desktop app</td></tr>
+  <tr><td><code>image_datasets/</code></td><td>Where captioned <code>{repeats}_{keyword}</code> folders are auto-detected from, if no explicit dataset paths are given</td></tr>
+  <tr><td><code>trained_loras/</code></td><td>Where finished LoRA output folders land</td></tr>
+</table>
+
+<h2>Pipeline overview</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>LoRA captioning and training pipeline overview</title>
+<desc>Raw images are captioned by the Janus-Pro captioning stage, then either the training UI or the training CLI hands the resulting datasets to kohya_ss for LoRA fine-tuning, producing a trained LoRA output folder.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Raw images</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Dropped into an image folder</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Captioning (Janus-Pro)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">run_captioning.sh</text>
+<path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a1)"/>
+<path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a1)"/>
+<rect class="box-coral" x="70" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="212" text-anchor="middle">Training UI</text>
+<text class="subtitle-svg" x="175" y="230" text-anchor="middle">training-ui.sh → LoRA_UI</text>
+<rect class="box-coral" x="400" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="212" text-anchor="middle">Training CLI</text>
+<text class="subtitle-svg" x="505" y="230" text-anchor="middle">run_training.sh</text>
+<line class="arrow" x1="175" y1="246" x2="175" y2="268" marker-end="url(#a1)"/>
+<line class="arrow" x1="505" y1="246" x2="505" y2="268" marker-end="url(#a1)"/>
+<path class="arrow" d="M175 268 L175 280 L340 280" marker-end="url(#a1)"/>
+<path class="arrow" d="M505 268 L505 280 L340 280" marker-end="url(#a1)"/>
+<rect class="box-teal" x="240" y="282" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="304" text-anchor="middle">kohya_ss LoRA training</text>
+<text class="subtitle-svg" x="340" y="322" text-anchor="middle">accelerate launch train_network.py</text>
+<line class="arrow" x1="340" y1="338" x2="340" y2="360" marker-end="url(#a1)"/>
+<rect class="box-amber" x="240" y="362" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="384" text-anchor="middle">Trained LoRA output</text>
+<text class="subtitle-svg" x="340" y="402" text-anchor="middle">trained_loras/&lt;output_name&gt;/</text>
+</svg>
+<figcaption>Overall pipeline: caption once, then train via UI or CLI</figcaption>
+</div>
+
+<ol>
+  <li><strong>Captioning</strong> (<code>run_captioning.sh</code>) runs <code>janus_pro_caption_core.py</code>
+  over an input image folder, using the Janus-Pro-1B vision-language model to write a caption per image, and
+  TF-IDF to extract the folder's core concepts into a <code>prompt_cue-&lt;keyword&gt;.txt</code> file. The
+  output is a new folder named after the chosen keyword containing the copied images, one <code>.txt</code>
+  caption per image, and that prompt-cue file.</li>
+  <li><strong>Training</strong> can be started either from the <strong>UI</strong>
+  (<code>training-ui.sh</code> → <code>LoRA_UI/main.py</code>, which lets the user pick dataset folders and
+  repeat counts, name the output, and save/load that setup as a config TOML) or directly from the
+  <strong>CLI</strong> (<code>run_training.sh</code>, which accepts explicit
+  <code>--dataset</code>/<code>--repeats</code>/<code>--output-name</code> flags, or auto-detects every
+  <code>{repeats}_{keyword}</code> folder under <code>image_datasets/</code> if no arguments are given).</li>
+  <li>Either path converges on the same <strong>kohya_ss LoRA training</strong> step: the chosen dataset
+  folders are copied into <code>kohya_ss/dataset/images/train/</code>, a dataset config TOML is generated to
+  match, and <code>accelerate launch .../train_network.py</code> fine-tunes a LoRA on top of the SD1.5 base
+  checkpoint.</li>
+  <li>The resulting <code>.safetensors</code> LoRA weights, along with a copy of each source dataset's
+  <code>prompt_cue-*.txt</code> file (for reference when writing prompts later), are collected into
+  <code>trained_loras/&lt;output_name&gt;/</code>.</li>
+</ol>
+
+<h2>Captioning stage internals</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Captioning stage internals</title>
+<desc>Janus-Pro-1B generates a caption for every image in the input folder, images and captions are copied into a new keyword-named folder, then TF-IDF extracts the top core concepts across all captions into a prompt cue file for future prompting.</desc>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Image folder</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Input to janus_pro_caption_core.py</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Janus-Pro-1B (VLM)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Generates a caption per image</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Copy image + save caption</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Into a new keyword folder</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">TF-IDF concept extraction</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Across all captions in the folder</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">prompt_cue-&lt;keyword&gt;.txt</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Top concepts for future prompting</text>
+</svg>
+<figcaption>Captioning stage: one image folder in, captions + concept file out</figcaption>
+</div>
+
+<p><code>janus_pro_caption_core.py</code>, for a given <code>folder_path</code> and <code>--keyword</code>
+(default <code>abc</code>):</p>
+<ol>
+  <li>Loads the Janus-Pro-1B model (<code>AutoModelForCausalLM</code>, <code>trust_remote_code=True</code>)
+  and its <code>VLChatProcessor</code>, in <code>bfloat16</code> on CUDA where available (falling back to
+  <code>float16</code>, then CPU).</li>
+  <li>For every image file in <code>folder_path</code>:
+    <ul>
+      <li>copies it into a new folder named after <code>--keyword</code> (created alongside the input
+      folder);</li>
+      <li>builds a two-turn conversation (<code>&lt;image_placeholder&gt;\ndescribe this image in
+      detail</code>) and generates a caption via <code>model.language_model.generate(...)</code> (sampling,
+      <code>temperature=0.1</code>, <code>top_p=0.95</code>, <code>max_new_tokens=512</code>, fixed seed
+      <code>42</code>);</li>
+      <li>writes that caption to a matching <code>.txt</code> file in the same new folder.</li>
+    </ul>
+  </li>
+  <li>Once every image is processed, runs a <code>TfidfVectorizer</code> (English stop-words, top 7
+  features) over the concatenation of every generated caption to extract the folder's <strong>core
+  concepts</strong>, and writes them (newline-separated) to <code>prompt_cue-&lt;keyword&gt;.txt</code>
+  inside the new folder.</li>
+</ol>
+<p>
+<code>run_captioning.sh</code> wraps this with environment bookkeeping: creates the venv if missing,
+sparse-checks-out just the <code>janus/</code> package from the upstream Janus repo if absent, installs
+<code>requirements.txt</code> if <code>torch</code> isn't importable yet, and verifies the Janus-Pro-1B model
+files are present (erroring out with a pointer to <code>setup.sh</code> / <code>git lfs pull</code> if not)
+before calling the core script.
+</p>
+<p>
+Repeats aren't chosen here — the caption script's own <code>--repeats</code> flag exists but the folder it
+creates is just named after the keyword; the <code>{repeats}_{keyword}</code> naming convention that
+<code>run_training.sh</code> expects is applied afterward (manually, or by the UI) when the folder is placed
+under <code>image_datasets/</code>.
+</p>
+
+<h2>Training stage internals</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Training stage internals</title>
+<desc>Selected captioned dataset folders are copied into kohya_ss's training directory, a dataset config file is generated with per-folder repeat counts, accelerate launches kohya_ss's LoRA training script against the base Stable Diffusion 1.5 model, and the result plus copied prompt cue files land in a dedicated output folder.</desc>
+<defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Selected dataset folders</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">{repeats}_{keyword} or UI picks</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Copy images + captions</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Into kohya_ss/dataset/images/train/</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Generate config_sat_nouki.toml</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Buckets, resolution, per-folder repeats</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">accelerate launch train_network.py</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">kohya_ss LoRA fine-tune of SD1.5</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a3)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">trained_loras/&lt;output_name&gt;/</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">safetensors + copied prompt cues</text>
+</svg>
+<figcaption>Training stage: dataset folders in, LoRA output folder out</figcaption>
+</div>
+
+<p><code>run_training.sh</code> does the heavy lifting for the CLI path (the UI ultimately shells out to the
+same script):</p>
+<ol>
+  <li><strong>Resolve dataset folders</strong> — either from explicit
+  <code>--dataset &lt;path&gt; [--repeats N]</code> arguments (repeated for multiple datasets), or by legacy
+  positional path arguments, or, if none are given, by scanning <code>image_datasets/</code> for folders
+  matching <code>{repeats}_{keyword}</code>. A <code>num_repeats</code> default of <code>30</code> is used
+  whenever a folder's name doesn't start with a number.</li>
+  <li><strong>Copy each dataset</strong> — image files
+  (<code>jpg</code>/<code>jpeg</code>/<code>png</code>/<code>bmp</code>/<code>gif</code>/<code>webp</code>)
+  and <code>.txt</code> caption files are copied (not moved) into
+  <code>kohya_ss/dataset/images/train/&lt;folder_name&gt;</code>, after clearing out whatever was there from
+  a previous run.</li>
+  <li><strong>Generate <code>config_sat_nouki.toml</code></strong> — a <code>[general]</code> section with
+  bucketing enabled (<code>bucket_no_upscale</code>, 64-step buckets between 256–2048 px, <code>.txt</code>
+  captions), one <code>[[datasets]]</code> block (512 px, batch size 4), and one
+  <code>[[datasets.subsets]]</code> entry per dataset folder with its resolved <code>num_repeats</code>.</li>
+  <li><strong>Launch training</strong> — activates the <code>kohya_ss</code> venv and runs:
+    <pre><code>accelerate launch --num_cpu_threads_per_process 1 ./kohya_ss/sd-scripts/train_network.py \
+    --pretrained_model_name_or_path='./kohya_ss/models/v1-5-pruned-emaonly.safetensors' \
+    --dataset_config='./config_sat_nouki.toml' \
+    --output_dir="$OUTPUT_FOLDER" \
+    --output_name="$OUTPUT_NAME" \
+    --save_model_as=safetensors \
+    --prior_loss_weight=1.0 \
+    --max_train_steps=400 \
+    --learning_rate=1e-4 \
+    --sdpa \
+    --gradient_checkpointing \
+    --cache_latents \
+    --mixed_precision="no" \
+    --network_module=networks.lora</code></pre>
+  An output name is auto-generated as <code>nouki_sd1-5_&lt;timestamp&gt;</code> if none was supplied.</li>
+  <li><strong>Collect outputs</strong> — moves the <code>.safetensors</code> file into
+  <code>trained_loras/&lt;output_name&gt;/</code> if it landed elsewhere, then copies every
+  <code>prompt_cue-*.txt</code> found in each <em>selected</em> source dataset folder into that same output
+  folder, so the concepts behind the training data travel with the resulting LoRA.</li>
+</ol>
+
+<h2>Setup</h2>
+<p><code>setup.sh</code> prepares both stages from a clean checkout:</p>
+<ol>
+  <li><strong>Project-local <code>uv</code></strong> — copies a system <code>uv</code> if one exists,
+  otherwise installs it via the official installer script, and vendors the binary at
+  <code>.tools/bin/uv</code> (also copied into each venv it creates).</li>
+  <li><strong>Captioning stage (part01)</strong> — creates its venv, installs <code>requirements.txt</code>
+  (<code>torch</code>, <code>transformers</code>, <code>accelerate</code>, <code>huggingface_hub</code>,
+  <code>pillow</code>, <code>attrdict</code>, <code>timm</code>, <code>scikit-learn</code>,
+  <code>einops</code>), sparse-clones the <code>janus/</code> package from <code>deepseek-ai/Janus</code>,
+  and downloads <code>deepseek-ai/Janus-Pro-1B</code> via <code>git lfs</code>.</li>
+  <li><strong>Training stage (part02)</strong> — clones <code>bmaltais/kohya_ss</code> (recursively, for its
+  submodules) if not already present, creates its venv, installs both kohya_ss's own
+  <code>requirements.txt</code> and this project's
+  <code>LoRA_UI_part02_TrainingScript/requirements.txt</code> (<code>accelerate</code>, <code>toml</code>,
+  <code>tomlkit</code>), and downloads the <code>v1-5-pruned-emaonly.safetensors</code> SD1.5 base checkpoint
+  directly (not via LFS) if missing.</li>
+  <li><strong>UI environment</strong> — set up separately (not by <code>setup.sh</code>), per the README: a
+  venv under <code>LoRA_UI/</code> with its own <code>requirements.txt</code>.</li>
+</ol>
+
+<h2>Running it</h2>
+<h3>Via the UI</h3>
+<pre><code>./training-ui.sh</code></pre>
+<p>Opens the desktop UI, which supports picking datasets with per-dataset repeat counts, naming the output,
+and saving/loading that whole setup as a TOML config (<code>File &gt; Save Config...</code> /
+<code>Ctrl+S</code>, <code>File &gt; Load Config...</code> / <code>Ctrl+O</code>).</p>
+
+<h3>Via the CLI, explicit datasets</h3>
+<pre><code>./run_training.sh \
+  image_datasets/20_KelpAllisonMoore \
+  image_datasets/20_nuagesAllison \
+  image_datasets/20_paperMountains</code></pre>
+
+<h3>Via the CLI, auto-detected datasets</h3>
+<pre><code>./run_training.sh</code></pre>
+
+<h3>Captioning a new folder of images</h3>
+<pre><code>./run_captioning.sh path/to/image_folder some_keyword</code></pre>
+
+<h2>Notes</h2>
+<ul>
+  <li>The training config's <code>num_repeats</code> per subset can come from three places, in priority
+  order: an explicit <code>--repeats</code> passed alongside <code>--dataset</code> on the CLI, a value
+  already tracked for that same path from an earlier parse, or a number parsed off the front of the folder's
+  name — falling back to <code>30</code> if none apply.</li>
+  <li><code>LoRA_UI_part02_TrainingScript/README.md</code> documents the standalone, fully-manual way to
+  drive kohya_ss (its own venv, moving the config file by hand, running <code>accelerate launch</code>
+  yourself) — useful background if <code>run_training.sh</code>'s automation needs debugging, but not
+  required for normal use.</li>
+  <li>Training hyperparameters (<code>max_train_steps=400</code>, <code>learning_rate=1e-4</code>,
+  <code>mixed_precision=no</code>, <code>--sdpa</code> attention, gradient checkpointing, latent caching) are
+  currently fixed inside <code>run_training.sh</code> rather than user-configurable from the CLI or UI.</li>
+</ul>
+
+</body>
+</html>

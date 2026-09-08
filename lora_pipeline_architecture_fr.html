@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoRA Captioning and Training — Vue d'ensemble de l'architecture</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Retour au portfolio</a>
+  <a href="lora_pipeline_architecture_en.html">English</a>
+</div>
+
+<h1>LoRA Captioning and Training</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture — projet : <strong>noukii-training</strong></p>
+
+<h2>Objectif</h2>
+<p>
+Transforme un dossier d'images brutes en un modèle LoRA entraîné avec un minimum de travail manuel : un
+modèle image-vers-texte rédige les légendes et extrait automatiquement les concepts clés, puis un simple
+script (ou une petite interface de bureau) copie le jeu de données résultant dans
+<a href="https://github.com/bmaltais/kohya_ss">kohya_ss</a> et lance l'entraînement LoRA avec des valeurs par
+défaut déjà en place. Le légendage repose sur
+<a href="https://github.com/deepseek-ai/Janus">Janus-Pro</a>, l'entraînement effectue le fine-tuning de
+Stable Diffusion 1.5.
+</p>
+
+<h2>Structure du dépôt</h2>
+<table>
+  <tr><th>Chemin</th><th>Rôle</th></tr>
+  <tr><td><code>setup.sh</code></td><td>Configuration unique de l'environnement : installe un <code>uv</code> local au projet, configure les venv des deux étapes, récupère Janus et le modèle Janus-Pro-1B, clone kohya_ss, télécharge le point de contrôle de base SD1.5</td></tr>
+  <tr><td><code>LoRA_UI_part01_CaptionScript/</code></td><td>Étape de légendage : <code>janus_pro_caption_core.py</code>, <code>utils.py</code>, son propre venv et <code>requirements.txt</code></td></tr>
+  <tr><td><code>LoRA_UI_part02_TrainingScript/</code></td><td>Étape d'entraînement : enveloppe <code>kohya_ss/</code> (cloné en sous-dossier), <code>config_sat_nouki.toml</code>, son propre <code>requirements.txt</code></td></tr>
+  <tr><td><code>LoRA_UI/</code></td><td>Interface de bureau (<code>main.py</code>, non fournie ici) pour choisir jeux de données/répétitions et lancer l'entraînement, avec son propre venv</td></tr>
+  <tr><td><code>run_captioning.sh</code></td><td>Point d'entrée CLI pour l'étape de légendage</td></tr>
+  <tr><td><code>run_training.sh</code></td><td>Point d'entrée CLI pour l'étape d'entraînement</td></tr>
+  <tr><td><code>training-ui.sh</code></td><td>Lance l'application de bureau <code>LoRA_UI</code></td></tr>
+  <tr><td><code>image_datasets/</code></td><td>D'où les dossiers légendés <code>{répétitions}_{mot-clé}</code> sont auto-détectés, si aucun chemin explicite n'est fourni</td></tr>
+  <tr><td><code>trained_loras/</code></td><td>Où atterrissent les dossiers de sortie LoRA terminés</td></tr>
+</table>
+
+<h2>Vue d'ensemble du pipeline</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Vue d'ensemble du pipeline de légendage et d'entraînement LoRA</title>
+<desc>Les images brutes sont légendées par l'étape Janus-Pro, puis soit l'UI d'entraînement soit la CLI d'entraînement remet les jeux de données résultants à kohya_ss pour le fine-tuning LoRA, produisant un dossier de sortie LoRA entraîné.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Images brutes</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Déposées dans un dossier d'images</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Légendage (Janus-Pro)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">run_captioning.sh</text>
+<path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a1f)"/>
+<path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a1f)"/>
+<rect class="box-coral" x="70" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="212" text-anchor="middle">UI d'entraînement</text>
+<text class="subtitle-svg" x="175" y="230" text-anchor="middle">training-ui.sh → LoRA_UI</text>
+<rect class="box-coral" x="400" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="212" text-anchor="middle">CLI d'entraînement</text>
+<text class="subtitle-svg" x="505" y="230" text-anchor="middle">run_training.sh</text>
+<line class="arrow" x1="175" y1="246" x2="175" y2="268" marker-end="url(#a1f)"/>
+<line class="arrow" x1="505" y1="246" x2="505" y2="268" marker-end="url(#a1f)"/>
+<path class="arrow" d="M175 268 L175 280 L340 280" marker-end="url(#a1f)"/>
+<path class="arrow" d="M505 268 L505 280 L340 280" marker-end="url(#a1f)"/>
+<rect class="box-teal" x="240" y="282" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="304" text-anchor="middle">Entraînement LoRA kohya_ss</text>
+<text class="subtitle-svg" x="340" y="322" text-anchor="middle">accelerate launch train_network.py</text>
+<line class="arrow" x1="340" y1="338" x2="340" y2="360" marker-end="url(#a1f)"/>
+<rect class="box-amber" x="240" y="362" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="384" text-anchor="middle">Sortie LoRA entraînée</text>
+<text class="subtitle-svg" x="340" y="402" text-anchor="middle">trained_loras/&lt;nom_sortie&gt;/</text>
+</svg>
+<figcaption>Pipeline global : légender une fois, puis entraîner via l'UI ou la CLI</figcaption>
+</div>
+
+<ol>
+  <li><strong>Légendage</strong> (<code>run_captioning.sh</code>) exécute
+  <code>janus_pro_caption_core.py</code> sur un dossier d'images d'entrée, en utilisant le modèle
+  vision-langage Janus-Pro-1B pour rédiger une légende par image, et le TF-IDF pour extraire les concepts
+  clés du dossier dans un fichier <code>prompt_cue-&lt;mot-clé&gt;.txt</code>. Le résultat est un nouveau
+  dossier nommé d'après le mot-clé choisi, contenant les images copiées, une légende <code>.txt</code> par
+  image, et ce fichier de concepts.</li>
+  <li><strong>L'entraînement</strong> peut être lancé soit depuis l'<strong>UI</strong>
+  (<code>training-ui.sh</code> → <code>LoRA_UI/main.py</code>, qui permet de choisir des dossiers de jeux de
+  données et leurs nombres de répétitions, de nommer la sortie, et de sauvegarder/charger cette configuration
+  en TOML) soit directement depuis la <strong>CLI</strong> (<code>run_training.sh</code>, qui accepte des
+  indicateurs explicites <code>--dataset</code>/<code>--repeats</code>/<code>--output-name</code>, ou
+  auto-détecte chaque dossier <code>{répétitions}_{mot-clé}</code> sous <code>image_datasets/</code> si
+  aucun argument n'est donné).</li>
+  <li>Les deux chemins convergent vers la même étape d'<strong>entraînement LoRA kohya_ss</strong> : les
+  dossiers de jeux de données choisis sont copiés dans <code>kohya_ss/dataset/images/train/</code>, un
+  fichier de configuration TOML est généré en conséquence, et
+  <code>accelerate launch .../train_network.py</code> effectue le fine-tuning LoRA sur le point de contrôle
+  de base SD1.5.</li>
+  <li>Les poids LoRA <code>.safetensors</code> résultants, ainsi qu'une copie du fichier
+  <code>prompt_cue-*.txt</code> de chaque jeu de données source (pour référence lors de la rédaction de
+  prompts par la suite), sont rassemblés dans <code>trained_loras/&lt;nom_sortie&gt;/</code>.</li>
+</ol>
+
+<h2>Fonctionnement interne de l'étape de légendage</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Fonctionnement interne de l'étape de légendage</title>
+<desc>Janus-Pro-1B génère une légende pour chaque image du dossier d'entrée, les images et légendes sont copiées dans un nouveau dossier nommé d'après le mot-clé, puis le TF-IDF extrait les principaux concepts à travers toutes les légendes dans un fichier de concepts pour les prompts futurs.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Dossier d'images</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Entrée de janus_pro_caption_core.py</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Janus-Pro-1B (VLM)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Génère une légende par image</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Copier image + enregistrer légende</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Dans un nouveau dossier mot-clé</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Extraction TF-IDF des concepts</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Sur toutes les légendes du dossier</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">prompt_cue-&lt;mot-clé&gt;.txt</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Concepts clés pour les prompts futurs</text>
+</svg>
+<figcaption>Étape de légendage : un dossier d'images en entrée, légendes + fichier de concepts en sortie</figcaption>
+</div>
+
+<p><code>janus_pro_caption_core.py</code>, pour un <code>folder_path</code> et un <code>--keyword</code>
+donnés (par défaut <code>abc</code>) :</p>
+<ol>
+  <li>Charge le modèle Janus-Pro-1B (<code>AutoModelForCausalLM</code>, <code>trust_remote_code=True</code>)
+  et son <code>VLChatProcessor</code>, en <code>bfloat16</code> sur CUDA si disponible (repli sur
+  <code>float16</code>, puis CPU).</li>
+  <li>Pour chaque fichier image dans <code>folder_path</code> :
+    <ul>
+      <li>le copie dans un nouveau dossier nommé d'après <code>--keyword</code> (créé à côté du dossier
+      d'entrée) ;</li>
+      <li>construit une conversation à deux tours (<code>&lt;image_placeholder&gt;\ndescribe this image in
+      detail</code>) et génère une légende via <code>model.language_model.generate(...)</code>
+      (échantillonnage, <code>temperature=0.1</code>, <code>top_p=0.95</code>,
+      <code>max_new_tokens=512</code>, graine fixe <code>42</code>) ;</li>
+      <li>écrit cette légende dans un fichier <code>.txt</code> correspondant dans le même nouveau dossier.</li>
+    </ul>
+  </li>
+  <li>Une fois toutes les images traitées, exécute un <code>TfidfVectorizer</code> (mots vides anglais, 7
+  caractéristiques principales) sur la concaténation de toutes les légendes générées pour extraire les
+  <strong>concepts clés</strong> du dossier, et les écrit (séparés par des sauts de ligne) dans
+  <code>prompt_cue-&lt;mot-clé&gt;.txt</code> à l'intérieur du nouveau dossier.</li>
+</ol>
+<p>
+<code>run_captioning.sh</code> enveloppe cela avec la gestion de l'environnement : crée le venv s'il est
+absent, effectue un sparse checkout du seul package <code>janus/</code> depuis le dépôt Janus en amont s'il
+est absent, installe <code>requirements.txt</code> si <code>torch</code> n'est pas encore importable, et
+vérifie que les fichiers du modèle Janus-Pro-1B sont présents (en s'arrêtant avec un renvoi vers
+<code>setup.sh</code> / <code>git lfs pull</code> sinon) avant d'appeler le script principal.
+</p>
+<p>
+Les répétitions ne sont pas choisies ici — le propre indicateur <code>--repeats</code> du script de
+légendage existe mais le dossier qu'il crée est simplement nommé d'après le mot-clé ; la convention de
+nommage <code>{répétitions}_{mot-clé}</code> attendue par <code>run_training.sh</code> est appliquée ensuite
+(manuellement, ou par l'UI) lorsque le dossier est placé sous <code>image_datasets/</code>.
+</p>
+
+<h2>Fonctionnement interne de l'étape d'entraînement</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Fonctionnement interne de l'étape d'entraînement</title>
+<desc>Les dossiers de jeux de données légendés sélectionnés sont copiés dans le répertoire d'entraînement de kohya_ss, un fichier de configuration est généré avec les nombres de répétitions par dossier, accelerate lance le script d'entraînement LoRA de kohya_ss sur le modèle de base Stable Diffusion 1.5, et le résultat ainsi que les fichiers de concepts copiés atterrissent dans un dossier de sortie dédié.</desc>
+<defs><marker id="a3f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Dossiers sélectionnés</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">{répétitions}_{mot-clé} ou choix UI</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Copier images + légendes</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Dans kohya_ss/dataset/images/train/</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Générer config_sat_nouki.toml</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Buckets, résolution, répétitions par dossier</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">accelerate launch train_network.py</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Fine-tuning LoRA de SD1.5 via kohya_ss</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a3f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">trained_loras/&lt;nom_sortie&gt;/</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">safetensors + fichiers de concepts copiés</text>
+</svg>
+<figcaption>Étape d'entraînement : dossiers de jeux de données en entrée, dossier de sortie LoRA en sortie</figcaption>
+</div>
+
+<p><code>run_training.sh</code> fait le gros du travail pour le chemin CLI (l'UI finit par appeler ce même
+script) :</p>
+<ol>
+  <li><strong>Résolution des dossiers de jeux de données</strong> — soit à partir d'arguments explicites
+  <code>--dataset &lt;chemin&gt; [--repeats N]</code> (répétés pour plusieurs jeux de données), soit par des
+  arguments de chemin positionnels hérités, soit, si aucun n'est donné, en scannant
+  <code>image_datasets/</code> à la recherche de dossiers correspondant à
+  <code>{répétitions}_{mot-clé}</code>. Une valeur <code>num_repeats</code> par défaut de <code>30</code> est
+  utilisée chaque fois que le nom d'un dossier ne commence pas par un nombre.</li>
+  <li><strong>Copie de chaque jeu de données</strong> — les fichiers image
+  (<code>jpg</code>/<code>jpeg</code>/<code>png</code>/<code>bmp</code>/<code>gif</code>/<code>webp</code>)
+  et les fichiers de légende <code>.txt</code> sont copiés (pas déplacés) dans
+  <code>kohya_ss/dataset/images/train/&lt;nom_dossier&gt;</code>, après avoir vidé ce qui s'y trouvait d'une
+  exécution précédente.</li>
+  <li><strong>Génération de <code>config_sat_nouki.toml</code></strong> — une section <code>[general]</code>
+  avec le bucketing activé (<code>bucket_no_upscale</code>, buckets par pas de 64 entre 256 et 2048 px,
+  légendes <code>.txt</code>), un bloc <code>[[datasets]]</code> (512 px, taille de lot 4), et une entrée
+  <code>[[datasets.subsets]]</code> par dossier de jeu de données avec son <code>num_repeats</code> résolu.</li>
+  <li><strong>Lancement de l'entraînement</strong> — active le venv de <code>kohya_ss</code> et exécute :
+    <pre><code>accelerate launch --num_cpu_threads_per_process 1 ./kohya_ss/sd-scripts/train_network.py \
+    --pretrained_model_name_or_path='./kohya_ss/models/v1-5-pruned-emaonly.safetensors' \
+    --dataset_config='./config_sat_nouki.toml' \
+    --output_dir="$OUTPUT_FOLDER" \
+    --output_name="$OUTPUT_NAME" \
+    --save_model_as=safetensors \
+    --prior_loss_weight=1.0 \
+    --max_train_steps=400 \
+    --learning_rate=1e-4 \
+    --sdpa \
+    --gradient_checkpointing \
+    --cache_latents \
+    --mixed_precision="no" \
+    --network_module=networks.lora</code></pre>
+  Un nom de sortie est généré automatiquement sous la forme <code>nouki_sd1-5_&lt;horodatage&gt;</code> si
+  aucun n'a été fourni.</li>
+  <li><strong>Collecte des sorties</strong> — déplace le fichier <code>.safetensors</code> vers
+  <code>trained_loras/&lt;nom_sortie&gt;/</code> s'il a atterri ailleurs, puis copie chaque
+  <code>prompt_cue-*.txt</code> trouvé dans chaque dossier de jeu de données source <em>sélectionné</em> vers
+  ce même dossier de sortie, afin que les concepts derrière les données d'entraînement accompagnent le LoRA
+  résultant.</li>
+</ol>
+
+<h2>Configuration</h2>
+<p><code>setup.sh</code> prépare les deux étapes à partir d'un clone propre :</p>
+<ol>
+  <li><strong><code>uv</code> local au projet</strong> — copie un <code>uv</code> système s'il en existe un,
+  sinon l'installe via le script d'installation officiel, et vendorise le binaire dans
+  <code>.tools/bin/uv</code> (également copié dans chaque venv qu'il crée).</li>
+  <li><strong>Étape de légendage (part01)</strong> — crée son venv, installe <code>requirements.txt</code>
+  (<code>torch</code>, <code>transformers</code>, <code>accelerate</code>, <code>huggingface_hub</code>,
+  <code>pillow</code>, <code>attrdict</code>, <code>timm</code>, <code>scikit-learn</code>,
+  <code>einops</code>), effectue un sparse clone du package <code>janus/</code> depuis
+  <code>deepseek-ai/Janus</code>, et télécharge <code>deepseek-ai/Janus-Pro-1B</code> via <code>git
+  lfs</code>.</li>
+  <li><strong>Étape d'entraînement (part02)</strong> — clone <code>bmaltais/kohya_ss</code>
+  (récursivement, pour ses sous-modules) s'il n'est pas déjà présent, crée son venv, installe à la fois le
+  <code>requirements.txt</code> propre à kohya_ss et celui de ce projet,
+  <code>LoRA_UI_part02_TrainingScript/requirements.txt</code> (<code>accelerate</code>, <code>toml</code>,
+  <code>tomlkit</code>), et télécharge le point de contrôle de base SD1.5
+  <code>v1-5-pruned-emaonly.safetensors</code> directement (pas via LFS) s'il est absent.</li>
+  <li><strong>Environnement de l'UI</strong> — configuré séparément (pas par <code>setup.sh</code>), selon le
+  README : un venv sous <code>LoRA_UI/</code> avec son propre <code>requirements.txt</code>.</li>
+</ol>
+
+<h2>Utilisation</h2>
+<h3>Via l'UI</h3>
+<pre><code>./training-ui.sh</code></pre>
+<p>Ouvre l'interface de bureau, qui permet de choisir des jeux de données avec des nombres de répétitions par
+jeu de données, de nommer la sortie, et de sauvegarder/charger toute cette configuration en TOML
+(<code>File &gt; Save Config...</code> / <code>Ctrl+S</code>, <code>File &gt; Load Config...</code> /
+<code>Ctrl+O</code>).</p>
+
+<h3>Via la CLI, jeux de données explicites</h3>
+<pre><code>./run_training.sh \
+  image_datasets/20_KelpAllisonMoore \
+  image_datasets/20_nuagesAllison \
+  image_datasets/20_paperMountains</code></pre>
+
+<h3>Via la CLI, jeux de données auto-détectés</h3>
+<pre><code>./run_training.sh</code></pre>
+
+<h3>Légender un nouveau dossier d'images</h3>
+<pre><code>./run_captioning.sh chemin/vers/dossier_images mot_cle</code></pre>
+
+<h2>Remarques</h2>
+<ul>
+  <li>Le <code>num_repeats</code> par sous-ensemble dans la configuration d'entraînement peut provenir de
+  trois sources, par ordre de priorité : un <code>--repeats</code> explicite passé avec
+  <code>--dataset</code> sur la CLI, une valeur déjà suivie pour ce même chemin lors d'une analyse
+  antérieure, ou un nombre extrait du début du nom du dossier — avec un repli sur <code>30</code> si aucun
+  ne s'applique.</li>
+  <li><code>LoRA_UI_part02_TrainingScript/README.md</code> documente la façon autonome et entièrement
+  manuelle de piloter kohya_ss (son propre venv, déplacement du fichier de configuration à la main,
+  exécution soi-même de <code>accelerate launch</code>) — utile comme contexte si l'automatisation de
+  <code>run_training.sh</code> doit être déboguée, mais non requise pour un usage normal.</li>
+  <li>Les hyperparamètres d'entraînement (<code>max_train_steps=400</code>, <code>learning_rate=1e-4</code>,
+  <code>mixed_precision=no</code>, attention <code>--sdpa</code>, gradient checkpointing, mise en cache des
+  latents) sont actuellement fixés dans <code>run_training.sh</code> plutôt que configurables par
+  l'utilisateur depuis la CLI ou l'UI.</li>
+</ul>
+
+</body>
+</html>

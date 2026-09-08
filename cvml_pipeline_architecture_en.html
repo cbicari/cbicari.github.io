@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Computer Vision + OSC — Architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .hop-label { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="cvml_pipeline_architecture_fr.html">Français</a>
+</div>
+
+<h1>Computer Vision + OSC</h1>
+<p class="subtitle">Architecture overview — project:
+  <a href="https://github.com/cbicari/CV_ML_intermedia_pipeline_workshop">cbicari/CV_ML_intermedia_pipeline_workshop</a>
+</p>
+
+<h2>Purpose</h2>
+<p>
+A starting pipeline for building a <strong>creative digital instrument</strong>: a person moves in front of
+a webcam, and that movement ends up controlling sound, visuals, lights, or anything else — through machine
+learning, without the artist having to write any ML code. The repo itself only supplies the first,
+computer-vision stage; the rest of the pipeline is two other pieces of established creative-coding software
+talking to it (and to each other) over OSC on the same machine.
+</p>
+
+<h2>Pipeline overview</h2>
+<p>Three separate programs, each doing one job, chained together over the local network via
+<a href="https://en.wikipedia.org/wiki/Open_Sound_Control">OSC</a> (Open Sound Control):</p>
+<ul>
+  <li><strong>Computer vision (this repo)</strong> — uses <a href="https://developers.google.com/mediapipe">MediaPipe</a>
+  to track a hand or body from the webcam feed, and streams the raw landmark coordinates out as a single OSC
+  message.</li>
+  <li><strong><a href="http://www.wekinator.org/">Wekinator</a></strong> — a machine-learning tool built for
+  exactly this kind of work: you show it examples ("when my hand is <em>here</em>, I want the output to be
+  <em>this</em>"), it trains a model, and from then on maps live input to output in real time, with no code
+  required.</li>
+  <li><strong><a href="https://ossia.io/">Ossia Score</a></strong> (or Max/MSP, Pure Data, TouchDesigner, or
+  any other OSC-aware software) — receives Wekinator's output and patches it into sound, visuals, or
+  anything else it can control.</li>
+</ul>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 460" role="img">
+<title>CV + ML intermedia pipeline overview</title>
+<desc>A webcam feed is tracked by a MediaPipe computer vision script in this repo, which streams coordinates over OSC to Wekinator on port 9000. Wekinator learns a mapping from that movement and sends its output over OSC on port 12000 to Ossia Score or similar software, which patches it into sound, visuals, or anything else.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Webcam</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Live video feed</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Computer vision (this repo)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">MediaPipe hand/body tracking</text>
+<text class="hop-label" x="340" y="172" text-anchor="middle">OSC → 127.0.0.1:9000 → /wek/inputs</text>
+<line class="arrow" x1="340" y1="178" x2="340" y2="198" marker-end="url(#a1)"/>
+<rect class="box-coral" x="240" y="200" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="222" text-anchor="middle">Wekinator</text>
+<text class="subtitle-svg" x="340" y="240" text-anchor="middle">Learns movement → output mapping</text>
+<text class="hop-label" x="340" y="272" text-anchor="middle">OSC → 127.0.0.1:12000 → /wek/outputs</text>
+<line class="arrow" x1="340" y1="278" x2="340" y2="298" marker-end="url(#a1)"/>
+<rect class="box-teal" x="240" y="300" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="322" text-anchor="middle">Ossia Score (or similar)</text>
+<text class="subtitle-svg" x="340" y="340" text-anchor="middle">Patches output to sound/visuals</text>
+<line class="arrow" x1="340" y1="356" x2="340" y2="378" marker-end="url(#a1)"/>
+<rect class="box-amber" x="240" y="380" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="402" text-anchor="middle">Sound, visuals, lights...</text>
+<text class="subtitle-svg" x="340" y="420" text-anchor="middle">Whatever the artist defines</text>
+</svg>
+<figcaption>The three-hop OSC pipeline, webcam to output</figcaption>
+</div>
+
+<h2>OSC hops and ports</h2>
+<p>Because this is three separate programs talking to each other, most setup issues come down to which port
+each one is listening on:</p>
+<table>
+  <tr><th>Hop</th><th>Sends from</th><th>Sends to</th><th>Address</th><th>Port</th></tr>
+  <tr><td>1</td><td>This repo's scripts</td><td>Wekinator</td><td><code>/wek/inputs</code></td><td><code>9000</code></td></tr>
+  <tr><td>2</td><td>Wekinator</td><td>Ossia Score (or other)</td><td><code>/wek/outputs</code></td><td><code>12000</code></td></tr>
+</table>
+<p>Two important quirks to know:</p>
+<ul>
+  <li>Wekinator's own built-in default input port is <code>6448</code>, not <code>9000</code> — this repo's
+  scripts always send on <code>9000</code>, so the Wekinator project's <strong>input port</strong> field must
+  be set to <code>9000</code> to match.</li>
+  <li>The output port (<code>12000</code>) <em>is</em> Wekinator's own default, so nothing needs to change on
+  that side unless desired.</li>
+</ul>
+<p><code>127.0.0.1</code> (a.k.a. <code>localhost</code>) always means "this same computer" — even though all
+three programs run on one machine, they still talk over the local network stack, just a network of one.</p>
+
+<h2>Computer vision scripts (this repo)</h2>
+<p>Two interchangeable tracking scripts, both built the same way:</p>
+<table>
+  <tr><th>Script</th><th>Tracks</th><th>Landmarks sent</th><th>OSC input count</th></tr>
+  <tr><td><code>hand_recognition.py</code></td><td>One hand (<code>mp_hands.Hands(max_num_hands=1)</code>)</td><td>21 hand landmarks × (x, y, z)</td><td>63</td></tr>
+  <tr><td><code>mediapipe_body.py</code></td><td>Full body pose</td><td>22 body landmarks × (x, y, z)</td><td>66</td></tr>
+</table>
+<p>Each script's loop:</p>
+<ol>
+  <li>Grabs a frame from the webcam (<code>cv2.VideoCapture</code>), converts it to RGB for MediaPipe.</li>
+  <li>Runs the corresponding MediaPipe model (<code>Hands</code> or <code>Pose</code>) to detect landmarks.</li>
+  <li>Draws the detected landmarks back onto the frame for visual feedback
+  (<code>mp_draw.draw_landmarks</code>) and shows it in an OpenCV window.</li>
+  <li>Flattens every landmark's <code>(x, y, z)</code> into one long list of floats and sends it as a
+  <strong>single</strong> OSC message to <code>/wek/inputs</code> on <code>127.0.0.1:9000</code> (via
+  <code>osc4py3</code>).</li>
+  <li>Repeats until <strong>Q</strong> is pressed or the window is closed.</li>
+</ol>
+<p>If the wrong camera opens, passing a different <code>dev_id</code> to <code>detection_context()</code>
+switches which device OpenCV captures from.</p>
+
+<h2>Setting up Wekinator (hop 1 → 2)</h2>
+<p>A tracking script must already be running (Wekinator needs to see live input while being configured). On
+Wekinator's project setup screen:</p>
+<table>
+  <tr><th>Setting</th><th>Value</th></tr>
+  <tr><td>Input port</td><td><code>9000</code></td></tr>
+  <tr><td>Input message (OSC address)</td><td><code>/wek/inputs</code></td></tr>
+  <tr><td>Number of inputs</td><td><code>63</code> for hand tracking, <code>66</code> for body tracking</td></tr>
+  <tr><td>Output message (OSC address)</td><td><code>/wek/outputs</code> (default)</td></tr>
+  <tr><td>Output host / port</td><td><code>localhost</code> / <code>12000</code> (default)</td></tr>
+  <tr><td>Number of outputs</td><td>however many outputs the artist wants to control</td></tr>
+</table>
+<p>From there, the record/train/run workflow is standard Wekinator usage (see the
+<a href="https://doc.gold.ac.uk/~mas01rf/Wekinator/instructions/">official instructions</a>, also bundled in
+this repo as <code>documentation/wekinator-documentation.pdf</code>).</p>
+
+<h2>Patching into Ossia Score (hop 2 → 3)</h2>
+<p>With Wekinator running and producing output:</p>
+<ol>
+  <li>In Ossia Score's <strong>Device Explorer</strong>, add a new device with protocol <strong>OSC</strong>.</li>
+  <li>Configure it: IP <code>127.0.0.1</code>, input port <code>12000</code> (Wekinator's output port),
+  device name optional.</li>
+  <li>With Wekinator actively running, right-click the new device and choose <strong>Learn</strong> — Ossia
+  auto-discovers the <code>/wek/outputs</code> address from the live traffic.</li>
+  <li>That discovered node holds a <strong>list</strong> value (Wekinator sends every output together as one
+  message, one float per output, in definition order) rather than separate named parameters.</li>
+  <li>To split it back into individually patchable values, drag a <strong>Spread array</strong> process into
+  the nodal view, set its output count to the number of Wekinator outputs, and feed <code>/wek/outputs</code>
+  into its input pin. It then exposes one pin per output (<code>Output 0</code> = Wekinator's
+  <code>outputs-1</code>, <code>Output 1</code> = <code>outputs-2</code>, etc.), each wireable to a different
+  destination.</li>
+</ol>
+
+<h2>Installation</h2>
+<h3>Windows</h3>
+<p>Requires <strong>Git</strong> and <strong>Python</strong> (the latter installed automatically by the
+install script):</p>
+<pre><code>git clone https://github.com/cbicari/c-lab-scripts
+Set-ExecutionPolicy Bypass -Scope Process
+cd c-lab-scripts
+.\install\install.ps1</code></pre>
+<p><code>install.ps1</code> installs Python 3.12 if missing, creates a virtual environment, installs
+dependencies, and adds two desktop shortcuts — <strong>Hand Tracking</strong> and <strong>Body
+Tracking</strong> — for launching either script without a terminal (launching one auto-closes the other).
+Install at <code>C:\</code> specifically: accented Windows usernames (e.g. <code>Étudiant</code>) break
+MediaPipe otherwise.</p>
+
+<h3>Linux / Mac</h3>
+<p>No install script is provided for these platforms — Git and Python 3 must already be present (check with
+<code>git --version</code> / <code>python3 --version</code>; install via <code>apt</code>, <code>dnf</code>,
+<code>xcode-select --install</code>, or Homebrew as needed), then:</p>
+<pre><code>git clone https://github.com/cbicari/c-lab-scripts
+cd c-lab-scripts
+python3 -m venv venv
+source venv/bin/activate
+pip install -r install/requirements.txt
+
+python scripts/hand_recognition.py
+# or
+python scripts/mediapipe_body.py</code></pre>
+<p>Press <strong>Q</strong> or close the window to stop either script.</p>
+
+<h2>Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>Camera not opening</td><td>Pass a different <code>dev_id</code> to <code>detection_context()</code>, e.g. <code>dev_id=1</code></td></tr>
+  <tr><td><code>ModuleNotFoundError</code></td><td>The terminal isn't using the venv — run <code>source venv/bin/activate</code> (Linux/Mac) or use the desktop shortcuts (Windows)</td></tr>
+  <tr><td>Slow or laggy</td><td>MediaPipe runs on CPU — close other heavy applications</td></tr>
+  <tr><td>Wekinator not reacting to movement</td><td>Confirm Wekinator's input port is set to <code>9000</code>, not its default <code>6448</code></td></tr>
+  <tr><td>Ossia Score receiving nothing</td><td>Confirm Ossia's OSC device listens on the same port Wekinator sends output to (<code>12000</code> by default), and that Wekinator is actively running, not just trained</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>snake_differ — Vue d'ensemble de l'architecture</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Retour au portfolio</a>
+  <a href="snake_differ_architecture_en.html">English</a>
+</div>
+
+<h1>snake_differ</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture — module Puara pour le Seeed XIAO ESP32-S3 Sense</p>
+
+<h2>Objectif</h2>
+<p>
+Un firmware de détection de mouvement qui observe un flux caméra, calcule les différences de pixels image
+par image, et diffuse les résultats sous forme de messages OSC via WiFi — afin qu'un DAW, un synthétiseur,
+ou un environnement génératif puisse réagir à la présence, la position et la forme d'objets en mouvement
+dans le cadre. Conçu à l'origine pour suivre des formes sombres (sculptures cinétiques en bobines) sur un
+fond clair, mais fonctionne pour toute source de mouvement sombre sur fond clair.
+</p>
+
+<h2>Matériel</h2>
+<table>
+  <tr><th></th><th></th></tr>
+  <tr><td>Carte</td><td>Seeed XIAO ESP32-S3 Sense</td></tr>
+  <tr><td>Caméra</td><td>OV2640 (intégrée)</td></tr>
+  <tr><td>Microphone</td><td>PDM (intégré, GPIO 41/42)</td></tr>
+  <tr><td>Sorties moteur</td><td>D2 = GPIO 3, D3 = GPIO 4 (PWM, 1 kHz, 10 bits)</td></tr>
+  <tr><td>Connexion</td><td>WiFi 2,4 GHz</td></tr>
+  <tr><td>Alimentation</td><td>USB-C</td></tr>
+</table>
+<p>Aucun câblage requis pour la caméra ou le micro ; les sorties moteur nécessitent un pilote externe pour
+tout ce qui dépasse un petit signal.</p>
+
+<h2>Vue d'ensemble du système</h2>
+<p>
+La caméra et le microphone alimentent le firmware, qui soit diffuse un paquet OSC vers un logiciel récepteur,
+soit sert une petite interface web (avec un aperçu MJPEG en direct) dans un navigateur pour calibrer la
+caméra avant un spectacle. Les deux chemins partagent la même connexion WiFi et le même stockage de
+paramètres sur l'appareil.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 380" role="img">
+<title>Vue d'ensemble du système snake_differ</title>
+<desc>La caméra et le microphone intégrés alimentent le firmware ESP32-S3, qui soit diffuse un paquet OSC via WiFi vers un logiciel récepteur, soit sert une interface web et un aperçu MJPEG dans un navigateur pour le calibrage avant un spectacle.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Caméra OV2640 + micro PDM</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Intégrés, QVGA niveaux de gris ~30 fps</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Firmware snake_differ</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Module Puara sur ESP32-S3</text>
+<path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a1f)"/>
+<path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a1f)"/>
+<rect class="box-coral" x="70" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="212" text-anchor="middle">Paquet OSC sortant</text>
+<text class="subtitle-svg" x="175" y="230" text-anchor="middle">UDP, ~30 Hz</text>
+<rect class="box-teal" x="400" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="212" text-anchor="middle">Interface web + aperçu MJPEG</text>
+<text class="subtitle-svg" x="505" y="230" text-anchor="middle">Ports 80 / 81</text>
+<line class="arrow" x1="175" y1="246" x2="175" y2="280" marker-end="url(#a1f)"/>
+<line class="arrow" x1="505" y1="246" x2="505" y2="280" marker-end="url(#a1f)"/>
+<rect class="box-amber" x="70" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="304" text-anchor="middle">Logiciel récepteur</text>
+<text class="subtitle-svg" x="175" y="322" text-anchor="middle">DAW, Max/MSP, Logic, Protokol</text>
+<rect class="box-amber" x="400" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="304" text-anchor="middle">Navigateur</text>
+<text class="subtitle-svg" x="505" y="322" text-anchor="middle">Config, scan, réglages, aperçu</text>
+<text class="note" x="340" y="365" text-anchor="middle">Les deux chemins partagent la même connexion WiFi et le même stockage de réglages</text>
+</svg>
+<figcaption>Vue d'ensemble : capteurs → firmware → sortie OSC ou interface web de calibrage</figcaption>
+</div>
+
+<h2>Structure des tâches du firmware</h2>
+<p>
+En interne, trois morceaux de code s'exécutant en parallèle — deux tâches FreeRTOS plus la boucle principale
+Arduino — partagent leur état via des structures protégées par mutex :
+</p>
+<ol>
+  <li><strong>Tâche caméra (~30 fps)</strong> — pour chaque image, un seul passage pixel par pixel calcule
+  deux ensembles de métriques indépendants à la fois :
+    <ul>
+      <li><strong>Métriques de différence</strong> : compare l'image actuelle à la précédente ; les pixels
+      dont le changement dépasse <code>diffThreshold</code> comptent comme « en mouvement ». À partir de ces
+      pixels, elle dérive une boîte englobante, un centroïde, une vitesse d'image en image, une dispersion
+      (écart-type autour du centroïde), un taux de remplissage (densité de mouvement dans la boîte
+      englobante), et une magnitude globale (fraction du cadre en mouvement).</li>
+      <li><strong>Métriques de pixels</strong> : indépendamment du mouvement, tout pixel plus sombre que
+      <code>pixThreshold</code> compte comme « matière de bobine sombre ». Cela donne une fraction de
+      couverture globale et un centroïde de la masse sombre, plus trois valeurs par zone sur une grille de
+      6×4 = 24 zones : couverture en pixels sombres, densité de gradient/contour (indicateur de l'enroulement
+      serré des bobines), et variance locale de luminosité (richesse de texture).</li>
+    </ul>
+  </li>
+  <li><strong>Tâche micro (~100 Hz)</strong> — lit 512 échantillons PDM à 16 kHz, calcule le RMS, et applique
+  un gain linéaire <code>micGain</code> plafonné à 1,0.</li>
+  <li><strong>Boucle principale (~30 Hz)</strong> — lit les deux ensembles de métriques sous leurs verrous,
+  applique un <strong>comportement de maintien (« latch »)</strong> (la plupart des valeurs spatiales
+  conservent leur dernier état connu quand la scène s'immobilise, plutôt que de revenir brusquement à zéro ;
+  la vitesse, l'indicateur de mouvement et le RMS du micro restent toujours en direct), puis soit :
+    <ul>
+      <li>construit et envoie le paquet OSC sortant via UDP, soit</li>
+      <li>analyse tout message OSC entrant et met à jour le seuil de différence ou pilote les sorties PWM
+      des moteurs en conséquence.</li>
+    </ul>
+  </li>
+</ol>
+<p>Le serveur web (port 80, issu du module Puara) et le serveur de capture MJPEG optionnel (port 81)
+fonctionnent indépendamment de cette boucle, lisant la dernière image brute et les paramètres actuels au
+besoin.</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Structure des tâches du firmware snake_differ</title>
+<desc>Deux tâches FreeRTOS concurrentes calculent les métriques dérivées de la caméra et du microphone dans un état partagé protégé par mutex. La boucle principale Arduino lit cet état à environ 30 Hz, applique le comportement de maintien, et soit envoie le paquet OSC via UDP, soit, sur réception d'OSC entrant, pilote les sorties PWM des moteurs.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-purple" x="70" y="20" width="250" height="56" rx="8"/>
+<text class="title" x="195" y="42" text-anchor="middle">Tâche caméra (~30 fps)</text>
+<text class="subtitle-svg" x="195" y="60" text-anchor="middle">Diff + analyse de pixels en un passage</text>
+<rect class="box-purple" x="360" y="20" width="250" height="56" rx="8"/>
+<text class="title" x="485" y="42" text-anchor="middle">Tâche micro (~100 Hz)</text>
+<text class="subtitle-svg" x="485" y="60" text-anchor="middle">Lecture PDM, RMS avec gain</text>
+<path class="arrow" d="M195 76 L195 93 L340 93 L340 108" marker-end="url(#a2f)"/>
+<path class="arrow" d="M485 76 L485 93 L340 93 L340 108" marker-end="url(#a2f)"/>
+<rect class="box" x="220" y="110" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="132" text-anchor="middle">Métriques partagées</text>
+<text class="subtitle-svg" x="340" y="150" text-anchor="middle">État diff/pixel/micro protégé par mutex</text>
+<line class="arrow" x1="340" y1="166" x2="340" y2="188" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="220" y="190" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="212" text-anchor="middle">Boucle principale (~30 Hz)</text>
+<text class="subtitle-svg" x="340" y="230" text-anchor="middle">Applique le maintien, construit le paquet OSC</text>
+<path class="arrow" d="M340 246 L340 263 L175 263 L175 280" marker-end="url(#a2f)"/>
+<path class="arrow" d="M340 246 L340 263 L505 263 L505 280" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="70" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="304" text-anchor="middle">Paquet OSC sortant</text>
+<text class="subtitle-svg" x="175" y="322" text-anchor="middle">UDP vers oscIP:oscPORT</text>
+<rect class="box-amber" x="400" y="282" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="304" text-anchor="middle">OSC entrant</text>
+<text class="subtitle-svg" x="505" y="322" text-anchor="middle">threshold, motor1, motor2</text>
+<line class="arrow" x1="505" y1="338" x2="505" y2="360" marker-end="url(#a2f)"/>
+<text class="note" x="505" y="378" text-anchor="middle">Pilote le PWM des moteurs (D2/D3)</text>
+</svg>
+<figcaption>Structure des tâches du firmware : tâches concurrentes, état partagé et boucle principale</figcaption>
+</div>
+
+<h2>Référence des paramètres</h2>
+<p>Tous les paramètres se trouvent sur la page web <strong>Settings</strong>, s'appliquent immédiatement sans
+reflashage, et persistent au redémarrage.</p>
+<table>
+  <tr><th>Paramètre</th><th>Défaut</th><th>Notes</th></tr>
+  <tr><td><code>oscIP</code></td><td><code>192.168.4.2</code></td><td>IP de l'ordinateur recevant l'OSC</td></tr>
+  <tr><td><code>oscPORT</code></td><td><code>8000</code></td><td>Port UDP sur lequel le récepteur écoute</td></tr>
+  <tr><td><code>localPORT</code></td><td><code>8000</code></td><td>Port UDP sur lequel l'appareil écoute pour l'OSC entrant</td></tr>
+  <tr><td><code>diffThreshold</code></td><td><code>30</code></td><td>Delta de luminosité de pixel (0–255) comptant comme mouvement ; plus bas = plus sensible</td></tr>
+  <tr><td><code>videoStream</code></td><td><code>0</code></td><td>Mettre à <code>1</code> pour activer l'aperçu MJPEG sur le port 81 ; désactiver pendant la performance</td></tr>
+  <tr><td><code>camContrast</code></td><td><code>0</code></td><td>Contraste matériel de l'OV2640, plage -2 à 2 ; plus élevé aide les formes sombres à ressortir</td></tr>
+  <tr><td><code>micGain</code></td><td><code>10</code></td><td>Gain linéaire sur le RMS brut du micro, plafonné à 1,0 ; plage pratique 1–100</td></tr>
+  <tr><td><code>pixThreshold</code></td><td><code>100</code></td><td>Luminosité absolue (0–255) en dessous de laquelle un pixel compte comme matière de bobine sombre</td></tr>
+</table>
+
+<h2>Référence OSC</h2>
+<h3>Paquet sortant — ~30 Hz</h3>
+<p>Envoyé comme un seul paquet OSC vers <code>oscIP:oscPORT</code> ; contient toujours tous les messages
+ci-dessous. Le nom de l'appareil provient de <code>config.json</code> (par défaut
+<code>snake_differ_0</code>).</p>
+<table>
+  <tr><th>Adresse</th><th>Args</th><th>Maintien</th><th>Description</th></tr>
+  <tr><td><code>/&lt;device&gt;/motion</code></td><td>motion (int), magnitude (float)</td><td>mag seulement</td><td>État de mouvement actuel et fraction du cadre en mouvement</td></tr>
+  <tr><td><code>/&lt;device&gt;/bbox</code></td><td>x_min, y_min, x_max, y_max (float×4)</td><td>oui</td><td>Boîte englobante du mouvement, normalisée 0–1</td></tr>
+  <tr><td><code>/&lt;device&gt;/centroid</code></td><td>cx, cy (float×2)</td><td>oui</td><td>Centre de masse des pixels en mouvement, normalisé</td></tr>
+  <tr><td><code>/&lt;device&gt;/velocity</code></td><td>vx, vy (float×2)</td><td><strong>non</strong></td><td>Déplacement du centroïde par image ; zéro à l'arrêt</td></tr>
+  <tr><td><code>/&lt;device&gt;/spread</code></td><td>sx, sy (float×2)</td><td>oui</td><td>Écart-type des pixels en mouvement autour du centroïde</td></tr>
+  <tr><td><code>/&lt;device&gt;/fill</code></td><td>fill (float)</td><td>oui</td><td>Densité de mouvement dans la boîte englobante</td></tr>
+  <tr><td><code>/&lt;device&gt;/mic</code></td><td>rms (float)</td><td><strong>non</strong></td><td>RMS du micro intégré, normalisé 0–1, indépendant du mouvement visuel</td></tr>
+  <tr><td><code>/&lt;device&gt;/coverage</code></td><td>coverage (float)</td><td><strong>non</strong></td><td>Fraction de l'ensemble du cadre sous <code>pixThreshold</code></td></tr>
+  <tr><td><code>/&lt;device&gt;/mass</code></td><td>cx, cy (float×2)</td><td><strong>non</strong></td><td>Centroïde de tous les pixels sombres, suit la masse de bobine même à l'arrêt</td></tr>
+  <tr><td><code>/&lt;device&gt;/grid/coverage</code></td><td>24 flottants</td><td><strong>non</strong></td><td>Fraction de pixels sombres par zone (6×4, ligne par ligne, ligne 0 = haut)</td></tr>
+  <tr><td><code>/&lt;device&gt;/grid/density</code></td><td>24 flottants</td><td><strong>non</strong></td><td>Magnitude de gradient/contour par zone — étroitesse des bobines</td></tr>
+  <tr><td><code>/&lt;device&gt;/grid/texture</code></td><td>24 flottants</td><td><strong>non</strong></td><td>Variance locale par zone — richesse de texture</td></tr>
+</table>
+
+<h3>Messages entrants</h3>
+<table>
+  <tr><th>Adresse</th><th>Arg</th><th>Description</th></tr>
+  <tr><td><code>/snake_differ/threshold</code></td><td>fraction (float)</td><td>Met à jour <code>diffThreshold</code> en direct ; la valeur est une fraction de 255</td></tr>
+  <tr><td><code>/snake_differ/motor1</code></td><td>vitesse (int 0–1000)</td><td>Rapport cyclique PWM sur D2 / GPIO 3</td></tr>
+  <tr><td><code>/snake_differ/motor2</code></td><td>vitesse (int 0–1000)</td><td>Rapport cyclique PWM sur D3 / GPIO 4</td></tr>
+</table>
+
+<h2>Première configuration</h2>
+<h3>1. Flasher le firmware (PlatformIO)</h3>
+<pre><code>pio run --target upload
+pio run --target uploadfs</code></pre>
+<p>Nécessite la plateforme <code>pioarduino</code> (ESP32 Arduino 3.x) — la plateforme PlatformIO ESP32 2.x
+standard a un plantage connu à la réception UDP ; <code>platformio.ini</code> pointe déjà vers la bonne
+plateforme.</p>
+
+<h3>2. Se connecter au WiFi de l'appareil</h3>
+<p>Au premier démarrage (ou sans routeur configuré), l'appareil crée son propre point d'accès (SSID
+<code>snake_differ_0</code>, mot de passe <code>garnetwillis</code>).</p>
+
+<h3>3. Ouvrir l'interface web</h3>
+<p><code>http://snake_differ_0.local</code> (repli : l'IP par défaut du point d'accès,
+<code>192.168.4.1</code>, ou celle affichée par le moniteur série). Les pages Config / Scan / Settings s'y
+trouvent toutes.</p>
+
+<h3>4. Rejoindre éventuellement un routeur de studio</h3>
+<p>Sur la page Config, saisir le SSID/mot de passe du routeur et Enregistrer ; l'appareil se connecte au
+prochain redémarrage et le point d'accès reste actif en secours.</p>
+
+<h2>Déroulement du calibrage</h2>
+<ol>
+  <li>Positionner l'appareil pour que la caméra voie toute la zone d'intérêt.</li>
+  <li>Régler <code>videoStream = 1</code>, ouvrir Config, vérifier le cadrage.</li>
+  <li>Ajuster <code>camContrast</code> jusqu'à ce que la forme suivie apparaisse clairement plus sombre que
+  le fond.</li>
+  <li>Scène immobile, surveiller le moniteur série (<code>pio device monitor</code>) pour un
+  <code>[diff] no motion</code> continu.</li>
+  <li>Bouger la forme — des lignes <code>[diff] mag=...</code> devraient apparaître immédiatement.</li>
+  <li>Ajuster <code>diffThreshold</code> jusqu'à une détection propre avec un minimum de bruit.</li>
+  <li>Régler <code>videoStream = 0</code>, saisir <code>oscIP</code>/<code>oscPORT</code>, Enregistrer.</li>
+  <li>Confirmer que le paquet arrive à ~30 Hz dans Protokol ou le récepteur visé.</li>
+</ol>
+
+<h2>Réception de l'OSC</h2>
+<ul>
+  <li><strong><a href="https://hexler.net/protokol">Protokol</a></strong> — moyen le plus rapide de confirmer
+  que l'appareil émet : ajouter un écouteur UDP sur le port 8000 et observer le paquet arriver.</li>
+  <li><strong>Max/MSP</strong> — <code>udpreceive 8000</code> → <code>OSC-route /&lt;device&gt;/motion
+  /&lt;device&gt;/bbox ...</code> → <code>unpack</code> par message.</li>
+  <li><strong>Logic Pro</strong> (pas d'OSC natif) — pont via Max/MSP → IAC Driver → Logic (activer l'IAC
+  Driver, mapper les valeurs OSC en CC MIDI dans Max, puis les assigner via MIDI-learn dans les Smart
+  Controls de Logic ou un plugin), ou utiliser TouchOSC pour transmettre l'OSC en CC MIDI sans avoir besoin
+  de Max.</li>
+</ul>
+
+<h2>Aperçu caméra</h2>
+<p>
+Quand <code>videoStream = 1</code>, un flux MJPEG est servi sur
+<code>http://&lt;ip_appareil&gt;:81/stream</code> (aussi intégré directement dans la page Config) via une
+seule connexion HTTP multipart persistante — pas de sondage, pas d'aller-retour par image. L'aperçu est la
+même image en niveaux de gris utilisée pour le calcul de différence, et <code>camContrast</code> affecte les
+deux. <strong>Désactiver <code>videoStream</code> avant un spectacle</strong> — l'encodage JPEG tourne en
+continu tant qu'un client est connecté.
+</p>
+
+<h2>Notes techniques</h2>
+<ul>
+  <li>Différence + analyse de pixels + fréquence OSC : ~30 fps / ~30 Hz</li>
+  <li>Format d'image : QVGA 320×240 niveaux de gris — 76 800 pixels traités par image, en un seul passage</li>
+  <li>Grille d'analyse : 6×4 = 24 zones (~80×60 px chacune) ; index de zone = ligne × 6 + colonne, ligne 0 =
+  haut, colonne 0 = gauche</li>
+  <li>Micro : PDM 16 kHz, RMS sur 512 échantillons, mise à jour ~100 Hz</li>
+  <li>PWM moteur : 1 kHz, 10 bits (plage 0–1023 ; entrée 0–1000 mappée directement)</li>
+  <li>PSRAM : 8 Mo utilisés pour les tampons d'image ; le firmware journalise une erreur et saute
+  l'initialisation caméra si indisponible</li>
+  <li>Port 80 : interface web Puara ; port 81 : flux MJPEG (<code>/stream</code>), actif uniquement si
+  <code>videoStream = 1</code></li>
+  <li>Plateforme : <code>pioarduino</code> (ESP32 Arduino 3.x) requise</li>
+</ul>
+
+<h2>Construit avec</h2>
+<ul>
+  <li><a href="https://github.com/Puara/puara-module">Puara Module</a> — WiFi, serveur web, système de fichiers, gestion des paramètres</li>
+  <li><a href="https://github.com/cnmat/OSC">CNMAT OSC</a> — encodage/décodage OSC</li>
+  <li>ESP32 Arduino / ESP-IDF — pilote caméra, I2S PDM, PWM LEDC</li>
+</ul>
+
+<footer>
+Société des Arts Technologiques (SAT) — Montréal<br>
+Input Devices and Music Interaction Laboratory (IDMIL), Université McGill
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firefly MV / dc1394 setup — Architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;
+    --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;
+    --teal-border: #1d9e75;
+    --coral-bg: #faece7;
+    --coral-border: #d85a30;
+    --amber-bg: #faeeda;
+    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;
+    --gray-border: #888780;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 40px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 14px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul { padding-left: 22px; }
+
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-accent { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="firefly_mv_architecture_fr.html">Français</a>
+</div>
+
+<h1>Firefly MV / dc1394 setup</h1>
+<p class="subtitle">Architecture overview — project:
+  <a href="https://github.com/cbicari/firefly-mv-dc1394-setup">cbicari/firefly-mv-dc1394-setup</a>
+</p>
+
+<h2>Purpose</h2>
+<p>
+This project sets up a Point Grey <strong>Firefly MV (FMVU series)</strong> IIDC/DCAM machine-vision camera
+on Ubuntu (24.04/26.04), so it can be:
+</p>
+<ul>
+  <li>accessed as a normal (non-root) user, and</li>
+  <li>used like an ordinary V4L2 webcam by regular applications (Cheese, a browser, VLC, etc.), even though
+  it natively speaks the IIDC/DCAM protocol rather than V4L2.</li>
+</ul>
+<p>Everything is driven by a single idempotent script, <code>install.sh</code>, which can be safely re-run.</p>
+
+<h2>Repository layout</h2>
+<table>
+  <tr><th>Path</th><th>Role</th></tr>
+  <tr><td><code>install.sh</code></td><td>Orchestrates the whole setup: packages, udev rule, group membership, kernel module, build of the test tool</td></tr>
+  <tr><td><code>udev/99-pointgrey-dc1394.rules</code></td><td>udev rule granting non-root USB access to the camera</td></tr>
+  <tr><td><code>config/v4l2loopback.conf</code></td><td>Module options for v4l2loopback (device name, index, etc.)</td></tr>
+  <tr><td><code>config/v4l2loopback-load.conf</code></td><td>Ensures the module loads automatically at boot</td></tr>
+  <tr><td><code>tools/dc1394_grab_test.c</code></td><td>Small C program using libdc1394 to enumerate/grab frames directly, for testing</td></tr>
+  <tr><td><code>tools/start_virtual_cam.sh</code></td><td>Starts the GStreamer bridge that feeds frames into the virtual camera device</td></tr>
+  <tr><td><code>camera_hardware.md</code></td><td>Notes on the physical camera hardware</td></tr>
+</table>
+
+<h2>Architecture</h2>
+<p>The setup creates <strong>two parallel paths</strong> once the camera is plugged in and the udev rule is active.</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 600" role="img">
+<title>Architecture diagram of firefly-mv-dc1394-setup</title>
+<desc>Camera connects over USB, a udev rule grants access, then splits into a libdc1394 test path and a GStreamer to v4l2loopback path feeding a virtual camera device used by consumer apps.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+  <path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Firefly MV camera</text>
+<text class="subtitle-svg" x="340" y="62" text-anchor="middle">IIDC/DCAM over USB</text>
+
+<line class="arrow" x1="340" y1="76" x2="340" y2="108" marker-end="url(#arrow)"/>
+
+<rect class="box-accent" x="240" y="110" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="132" text-anchor="middle">udev rule</text>
+<text class="subtitle-svg" x="340" y="152" text-anchor="middle">Grants plugdev group access</text>
+
+<path class="arrow" d="M340 166 L340 183 L175 183 L175 200" marker-end="url(#arrow)"/>
+<path class="arrow" d="M340 166 L340 183 L505 183 L505 200" marker-end="url(#arrow)"/>
+
+<rect class="box-teal" x="70" y="200" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="222" text-anchor="middle">libdc1394</text>
+<text class="subtitle-svg" x="175" y="242" text-anchor="middle">C API, direct access</text>
+
+<rect class="box-teal" x="400" y="200" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="222" text-anchor="middle">GStreamer bridge</text>
+<text class="subtitle-svg" x="505" y="242" text-anchor="middle">start_virtual_cam.sh</text>
+
+<line class="arrow" x1="175" y1="256" x2="175" y2="288" marker-end="url(#arrow)"/>
+<line class="arrow" x1="505" y1="256" x2="505" y2="288" marker-end="url(#arrow)"/>
+
+<rect class="box-coral" x="70" y="290" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="312" text-anchor="middle">dc1394_grab_test</text>
+<text class="subtitle-svg" x="175" y="332" text-anchor="middle">Raw capture test tool</text>
+
+<rect class="box-coral" x="400" y="290" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="312" text-anchor="middle">v4l2loopback</text>
+<text class="subtitle-svg" x="505" y="332" text-anchor="middle">Kernel module (dkms build)</text>
+
+<line class="arrow" x1="505" y1="346" x2="505" y2="378" marker-end="url(#arrow)"/>
+
+<rect class="box-amber" x="400" y="380" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="402" text-anchor="middle">/dev/video10</text>
+<text class="subtitle-svg" x="505" y="422" text-anchor="middle">"Firefly MV Virtual Camera"</text>
+
+<line class="arrow" x1="505" y1="436" x2="505" y2="468" marker-end="url(#arrow)"/>
+
+<rect class="box" x="400" y="470" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="492" text-anchor="middle">Consumer apps</text>
+<text class="subtitle-svg" x="505" y="512" text-anchor="middle">Cheese, browser, VLC, …</text>
+</svg>
+</div>
+
+<h3>1. Hardware access layer</h3>
+<p>
+The camera enumerates as a USB device. The udev rule (<code>99-pointgrey-dc1394.rules</code>) sets permissions
+so that any user in the <code>plugdev</code> group can open the device without <code>sudo</code>.
+<code>install.sh</code> copies this rule into <code>/etc/udev/rules.d/</code>, reloads udev, and adds the
+invoking user to <code>plugdev</code>.
+</p>
+
+<h3>2. Direct/test path (libdc1394)</h3>
+<p>
+<code>dc1394_grab_test.c</code> is compiled against <code>libdc1394-2</code> and used to confirm the camera
+is visible and can deliver frames, independent of any virtual-camera machinery. This is the quickest way to
+sanity-check the hardware and udev setup.
+</p>
+
+<h3>3. Virtual webcam path (GStreamer + v4l2loopback)</h3>
+<ul>
+  <li><code>v4l2loopback</code> is a kernel module (built via DKMS) that creates a fake V4L2 device, here
+  exposed as <code>/dev/video10</code> and named "Firefly MV Virtual Camera". Its behavior (device name/index)
+  is set through <code>config/v4l2loopback.conf</code>, and <code>config/v4l2loopback-load.conf</code> makes
+  sure it is loaded at boot.</li>
+  <li><code>tools/start_virtual_cam.sh</code> runs a GStreamer pipeline that reads frames from the physical
+  camera and writes them into the <code>v4l2loopback</code> device.</li>
+  <li>Once running, <code>/dev/video10</code> behaves like any standard webcam, so ordinary V4L2-aware
+  applications can select and use it without knowing anything about IIDC/DCAM or <code>libdc1394</code>.</li>
+</ul>
+
+<h2>Installation flow (install.sh)</h2>
+<ol>
+  <li>Install required packages (libdc1394-dev, libusb-1.0-0-dev, v4l2loopback-dkms, GStreamer plugins, etc.).</li>
+  <li>Install the udev rule and reload/trigger udev.</li>
+  <li>Add the current user to the <code>plugdev</code> group.</li>
+  <li>Install v4l2loopback module configuration files.</li>
+  <li>Build v4l2loopback for the running kernel via <code>dkms autoinstall</code>.</li>
+  <li>Load the v4l2loopback module.</li>
+  <li>Compile <code>dc1394_grab_test</code>.</li>
+  <li>Verify that <code>/dev/video10</code> ("Firefly MV Virtual Camera") is present.</li>
+</ol>
+
+<h2>Typical usage after install</h2>
+<pre><code># Raw capture test via libdc1394
+./tools/dc1394_grab_test 5
+
+# Start the virtual webcam bridge (Ctrl+C to stop)
+./tools/start_virtual_cam.sh</code></pre>
+<p>Then open Cheese, a browser's camera picker, or <code>vlc v4l2:///dev/video10</code>, and select
+"Firefly MV Virtual Camera".</p>
+
+<h2>Notes</h2>
+<ul>
+  <li>A reboot or unplug/replug may be required the first time, for the udev rule and <code>plugdev</code>
+  group membership to take full effect.</li>
+  <li>If <code>dkms autoinstall</code> fails (e.g. missing matching <code>linux-headers</code> on a custom
+  kernel), matching headers must be installed manually and v4l2loopback re-installed for that kernel version.</li>
+</ul>
+
+</body>
+</html>

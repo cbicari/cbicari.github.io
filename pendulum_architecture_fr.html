@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation du pendule — Vue d'ensemble de l'architecture firmware</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .box-outline { fill: none; stroke: var(--border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .cycle-note { font-size: 12px; fill: var(--muted); font-style: italic; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Retour au portfolio</a>
+  <a href="pendulum_architecture_en.html">English</a>
+</div>
+
+<h1>Installation du pendule</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture firmware</p>
+
+<p>
+Firmware d'une grande installation cinétique en forme de pendule, construite à partir d'une chaîne de
+segments de bras motorisés et d'un propulseur électromagnétique rotatif à la base. Quatre projets
+<a href="https://platformio.org/">PlatformIO</a> indépendants ciblent des cartes Teensy 4.1 — un par segment
+de bras (petit, moyen, long) plus un pour le propulseur — partageant la même couche de communication OSC
+mais chacun avec sa propre géométrie physique, son nombre de moteurs, et son espace de noms d'adresses OSC.
+</p>
+
+<h2>Topologie matérielle</h2>
+<p>
+Les commandes arrivent sur le réseau sous forme de messages OSC, qui atteignent une unité <strong>NGIMU de
+x-io Technologies</strong> faisant office de pont OSC-vers-série. Chaque contrôleur Teensy 4.1 reçoit l'OSC
+à la fois directement via son port série USB et via le NGIMU sur son port série auxiliaire
+(<code>Serial1</code>), décodé par une couche OSC encadrée en SLIP (<code>Receive.cpp</code>/<code>Send.cpp</code>,
+basée sur la bibliothèque OSC99 de Seb Madgwick avec une couche <code>EventScheduler</code>/<code>EventTrigger</code>
+pour les envois périodiques ou déclenchés par événement).
+</p>
+<p>Chaque Teensy pilote son propre matériel d'actionnement :</p>
+<ul>
+  <li>Les trois <strong>contrôleurs de bras</strong> (petit, moyen, long) pilotent chacun 2 à 3 moteurs de
+  chariot linéaire via une <strong>carte de commande moteur Cytron</strong>, dont l'alimentation est
+  contrôlée par une broche MOSFET, à l'aide d'une broche PWM de vitesse et d'une broche numérique de
+  direction par moteur, avec un <code>Encoder</code> en quadrature par moteur pour la rétroaction de position
+  en boucle fermée et des interrupteurs de fin de course mécaniques pour le calibrage et les arrêts
+  d'urgence.</li>
+  <li>Le <strong>contrôleur du propulseur</strong> pilote directement un anneau de <strong>bobines
+  électromagnétiques</strong> via une broche PWM de puissance et une broche de polarité/direction, à l'aide
+  d'un unique <code>Encoder</code> rotatif pour synchroniser les impulsions des bobines avec la position du
+  pendule en balancement.</li>
+</ul>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Topologie matérielle de l'installation du pendule</title>
+<desc>Les commandes OSC arrivent sur le réseau vers un pont NGIMU x-io, qui les relaie via une liaison série vers quatre contrôleurs Teensy 4.1 indépendants, chacun pilotant son propre matériel moteur ou bobine et ses actionneurs physiques.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Réseau de contrôle</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Messages OSC via UDP</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Pont NGIMU</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">x-io Technologies, OSC ⇄ série</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a1f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">4× contrôleurs Teensy 4.1</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Petit/moyen/long bras + propulseur</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a1f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Pilotes moteur / bobine</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Cartes Cytron ou bobine PWM+DIR</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a1f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Actionneurs physiques</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Moteurs de chariot / électroaimants</text>
+<text class="cycle-note" x="340" y="410" text-anchor="middle">Encodeurs et fins de course renvoient la position à leur Teensy</text>
+</svg>
+<figcaption>Topologie matérielle : réseau → NGIMU → contrôleurs → pilotes → actionneurs</figcaption>
+</div>
+
+<h2>Boucle firmware partagée</h2>
+<p>
+Les quatre variantes de firmware partagent la même structure de boucle globale, construite à partir de la
+même paire générique <code>Receive.cpp</code> / <code>Send.cpp</code> :
+</p>
+<ol>
+  <li><strong>Entrée OSC (SLIP)</strong> — <code>ReceiveDoTasks()</code> récupère des octets à la fois depuis
+  le port série USB et le port série auxiliaire du NGIMU, alimentant deux décodeurs SLIP indépendants.</li>
+  <li><strong>Répartition par adresse</strong> — chaque message OSC décodé est comparé à un motif d'adresse
+  littéral (p. ex. <code>/smallArm/destinationM1</code>, <code>/booster/activeZone</code>) et met à jour
+  l'état pertinent du contrôleur : la <code>destination</code> d'un moteur, un indicateur comme
+  <code>brakeState</code> ou <code>broadcast</code>, ou déclenche une action comme <code>calibrate()</code>.</li>
+  <li><strong>Boucle de contrôle</strong> — les contrôleurs de bras vérifient les interrupteurs de fin de
+  course (anti-rebond via <code>Bounce</code>), exécutent la machine à états de calibrage si active, et sinon
+  pilotent les moteurs vers leurs destinations ; le contrôleur du propulseur lit son encodeur rotatif,
+  détermine la direction du balancement, et évalue quelle « zone » d'électroaimants est active.</li>
+  <li><strong>Entrées/sorties matérielles</strong> — les signaux PWM/direction sortent vers le pilote Cytron
+  ou le pilote de bobines ; l'état des encodeurs et interrupteurs de fin de course revient en entrée.</li>
+  <li><strong>Télémétrie planifiée</strong> — <code>SendDoTasks()</code> exécute un <code>EventScheduler</code>
+  qui empaquette périodiquement l'état (positions des moteurs, statut de calibrage, déclenchements de fin de
+  course, erreurs, etc.) en messages OSC renvoyés via <code>Serial1</code> vers le NGIMU, sous réserve de
+  l'indicateur <code>broadcast</code>/<code>broadcastState</code> propre à chaque contrôleur.</li>
+</ol>
+<p>Cette boucle se répète indéfiniment dans le <code>loop()</code> de chaque <code>.ino</code>.</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Structure de la boucle firmware partagée</title>
+<desc>Chacun des quatre firmwares Teensy exécute la même forme de boucle : décoder l'OSC entrant via la liaison série, le répartir par adresse pour mettre à jour l'état local, exécuter la boucle de contrôle par rapport aux interrupteurs de fin de course et aux encodeurs, piloter le matériel, puis renvoyer la télémétrie planifiée, en répétant à chaque itération de la boucle principale.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Entrée OSC (SLIP)</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Série USB + série auxiliaire NGIMU</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Répartition par adresse</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Met à jour destinations et indicateurs</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Boucle de contrôle</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Fins de course, calibrage, mouvement en boucle fermée</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Entrées/sorties matérielles</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">PWM+DIR en sortie, encodeurs/fins de course en entrée</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Télémétrie planifiée</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Position, statut, erreurs envoyés via série</text>
+<text class="cycle-note" x="340" y="410" text-anchor="middle">↻ se répète à chaque itération de la boucle principale</text>
+</svg>
+<figcaption>Boucle firmware partagée, commune aux quatre variantes de contrôleur</figcaption>
+</div>
+
+<h2>Chaîne des segments de bras</h2>
+<p>
+Les trois firmwares de bras partagent la même mécanique sous-jacente de <code>motor</code>/interrupteurs de
+fin de course/calibrage, mais décrivent des points différents d'une même chaîne mécanique, de la base
+rotative jusqu'à l'extrémité :
+</p>
+<table>
+  <tr><th>Segment</th><th>Moteurs</th><th>Rôle de chaque moteur</th></tr>
+  <tr><td><strong>Propulseur</strong> (base)</td><td>— (anneau de bobines)</td><td>Entraîne électromagnétiquement le balancement rotatif du pendule</td></tr>
+  <tr><td><strong>Bras long</strong></td><td>M1, M2, M3</td><td>M1 = chariot amortisseur ; M2 = récepteur, se connecte à l'axe du propulseur/de la base ; M3 = émetteur, se connecte au récepteur du bras moyen</td></tr>
+  <tr><td><strong>Bras moyen</strong></td><td>M1, M2, M3</td><td>M1 = chariot amortisseur ; M2 = récepteur, se connecte à l'émetteur du bras long ; M3 = émetteur, se connecte au récepteur du petit bras</td></tr>
+  <tr><td><strong>Petit bras</strong> (extrémité)</td><td>M1, M2</td><td>M1 = chariot amortisseur ; M2 = récepteur, se connecte à l'émetteur du bras moyen</td></tr>
+</table>
+<p>
+À l'intérieur de chaque bras, des constantes <code>SAFE_DISTANCE_*</code> imposent un écart minimal (en tics
+d'encodeur) entre chariots adjacents afin qu'ils ne puissent jamais entrer en collision physique, et les
+<code>min_pos</code>/<code>max_pos</code> de chaque chariot sont recalculés en continu par rapport à ses
+voisins dans <code>update_motor_positions()</code>.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 220" role="img">
+<title>Chaîne des segments de bras du pendule, de la base à l'extrémité</title>
+<desc>Le propulseur forme la base rotative, relié mécaniquement en séquence au bras long, puis au bras moyen, puis au petit bras à l'extrémité.</desc>
+<defs><marker id="a3f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-outline" x="20" y="50" width="600" height="120" rx="20"/>
+<text class="subtitle-svg" x="320" y="40" text-anchor="middle">Base → extrémité</text>
+<rect class="box" x="40" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="104" y="102" text-anchor="middle">Propulseur</text>
+<text class="subtitle-svg" x="104" y="120" text-anchor="middle">Pilote de bobines, base rotative</text>
+<line class="arrow" x1="168" y1="110" x2="181" y2="110" marker-end="url(#a3f)"/>
+<rect class="box-purple" x="181" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="245" y="102" text-anchor="middle">Bras long</text>
+<text class="subtitle-svg" x="245" y="120" text-anchor="middle">3 chariots</text>
+<line class="arrow" x1="309" y1="110" x2="322" y2="110" marker-end="url(#a3f)"/>
+<rect class="box-coral" x="322" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="386" y="102" text-anchor="middle">Bras moyen</text>
+<text class="subtitle-svg" x="386" y="120" text-anchor="middle">3 chariots</text>
+<line class="arrow" x1="450" y1="110" x2="463" y2="110" marker-end="url(#a3f)"/>
+<rect class="box-amber" x="463" y="80" width="128" height="60" rx="10"/>
+<text class="title" x="527" y="102" text-anchor="middle">Petit bras (extrémité)</text>
+<text class="subtitle-svg" x="527" y="120" text-anchor="middle">2 chariots</text>
+</svg>
+<figcaption>Chaîne mécanique de la base (propulseur) à l'extrémité (petit bras)</figcaption>
+</div>
+
+<h3>Spécificités par bras</h3>
+<table>
+  <tr><th></th><th>Petit bras</th><th>Bras moyen</th><th>Bras long</th></tr>
+  <tr><td>Moteurs</td><td>2</td><td>3</td><td>3</td></tr>
+  <tr><td>Interrupteurs de fin de course</td><td>3 (haut, mi-haut, bas)</td><td>4 (haut, mi-haut, mi-bas, bas)</td><td>4 (haut, mi-haut, mi-bas, bas)</td></tr>
+  <tr><td>Frein</td><td>Oui (<code>brakeControlPin</code>, <code>checkBrakeState()</code>)</td><td>Non — gestionnaire OSC de frein commenté, aucune vérification dans la boucle</td><td>Oui (<code>brakeState</code> rétabli, vérifié via OSC et <code>checkBrakeState()</code>)</td></tr>
+  <tr><td>Tics pleine échelle</td><td>300 000 (<code>CALIBRATE_MAX_SMALL_ARM</code>)</td><td>800 000 (<code>CALIBRATE_MAX_MIDDLE_ARM</code>)</td><td>6 791 754 (<code>CALIBRATE_MAX_LONG_ARM</code>), ≈137 cm du haut au bas</td></tr>
+  <tr><td>Espace de noms OSC</td><td><code>/smallArm/...</code></td><td><code>/middleArm/...</code></td><td><code>/longArm/...</code></td></tr>
+  <tr><td>Type de structure</td><td><code>pendulum_small_arm</code></td><td><code>pendulum_mid_long_arms</code> (instance <code>middleArm</code>)</td><td><code>pendulum_mid_long_arms</code> (instance <code>longArm</code>)</td></tr>
+</table>
+<p>
+La routine de calibrage de chaque bras pilote ses moteurs extrêmes jusqu'à leurs interrupteurs de fin de
+course pour remettre les encodeurs à zéro, puis enregistre <code>min_pos</code>/<code>max_pos</code> pour le
+reste de l'exécution. Une étape <code>move_motors()</code> réduit la vitesse PWM par paliers de distance
+fixes à mesure qu'un chariot approche de sa destination (<code>motor_movement()</code>), et donne un court
+« boost » PWM si un moteur semble bloqué (position inchangée pendant environ 5000 itérations de boucle).
+</p>
+
+<h3>Reprise après coupure d'alimentation (petit bras / bras moyen / bras long)</h3>
+<p>Les trois firmwares de bras conservent les dernières positions connues des moteurs en EEPROM (structure à
+nombre magique, <code>saveLastKnownPositions()</code> / <code>loadLastKnownPositions()</code>) :</p>
+<ul>
+  <li>Enregistrées avec <code>EEPROM_RELIABILITY_CLEAN</code> dès que tous les moteurs se stabilisent dans
+  leurs bornes.</li>
+  <li>Sauvegardées périodiquement avec <code>EEPROM_RELIABILITY_APPROX</code> pendant que les moteurs sont
+  activement en mouvement (toutes les <code>AUTOSAVE_INTERVAL_MS</code>), au cas où l'alimentation serait
+  coupée en plein mouvement.</li>
+  <li>Au démarrage, une position sauvegardée valide permet au bras de reprendre sans passer par un calibrage
+  complet ; le niveau de fiabilité est diffusé via OSC (<code>/*/resumeReliability</code>) afin que
+  l'opérateur sache si la position reprise est exacte ou approximative.</li>
+</ul>
+
+<h2>Propulseur : entraînement rotatif électromagnétique</h2>
+<p>
+Le propulseur est architecturalement différent des trois bras — au lieu de faire avancer des chariots le
+long d'un rail, il pulse un anneau de bobines électromagnétiques pour ajouter de l'énergie au balancement
+rotatif du pendule, synchronisé avec un unique encodeur rotatif :
+</p>
+<ul>
+  <li><strong>Détection de direction</strong> : comparer la nouvelle position de l'encodeur à la précédente
+  (dans une bande de garde autour du passage à zéro de l'encodeur, <code>LIMIT_Z_ORIGIN_NEGATIVE</code>/<code>_POSITIVE</code>)
+  détermine si le pendule se balance actuellement dans le sens horaire ou antihoraire.</li>
+  <li><strong>Zones de position</strong> : la plage de balancement de l'encodeur est divisée en bandes
+  « sur bobine », « entre bobines » et « mortes » (structures <code>Bound</code>/<code>Zone</code>, tables de
+  positions précalculées). Selon la <strong>zone active</strong> sélectionnée (0 à 3), un ensemble
+  progressivement plus grand de paires d'électroaimants est considéré actif — la zone 0 utilise les 3 paires
+  les plus internes, jusqu'à la zone 3 qui utilise toutes les paires sur toute la plage de balancement.</li>
+  <li><strong>Activation des bobines</strong> : lorsque la position actuelle tombe dans une bande active
+  « sur bobine » ou « entre bobines », la bobine est activée à <code>pwm_strength</code> avec une polarité
+  choisie selon la direction du balancement et le type de bande, de sorte que le champ pousse toujours le
+  pendule vers l'avant plutôt que de le freiner ; les positions dans la bande « morte » reçoivent un PWM nul.</li>
+  <li><strong>Contrôles exposés via OSC</strong> : <code>/booster/on</code> (activer/désactiver),
+  <code>/booster/strength</code> (amplitude PWM), <code>/booster/activeZone</code> (0–3),
+  <code>/booster/brakeState</code>, et <code>/rotary/broadcast</code> (télémétrie activée/désactivée). La
+  télémétrie (<code>/rotary/value</code>) rapporte la position brute de l'encodeur à un intervalle lent de
+  60 secondes.</li>
+</ul>
+
+<h2>Référence OSC</h2>
+<h3>Contrôleurs de bras (<code>smallArm</code> / <code>middleArm</code> / <code>longArm</code>)</h3>
+<table>
+  <tr><th>Adresse</th><th>Sens</th><th>Fonction</th></tr>
+  <tr><td><code>/*/destinationM1</code>, <code>/*/destinationM2</code>, <code>/*/destinationM3</code>*</td><td>entrée</td><td>Définit la position cible d'un moteur (échelle 0–1000, convertie en tics d'encodeur)</td></tr>
+  <tr><td><code>/*/calibrate</code></td><td>entrée</td><td>Démarre (ou redémarre) la routine de calibrage</td></tr>
+  <tr><td><code>/*/stopAllMotors</code></td><td>entrée</td><td>Met à zéro toutes les sorties PWM et fige la position actuelle comme destination</td></tr>
+  <tr><td><code>/*/brakeState</code></td><td>entrée</td><td>Engage/relâche le solénoïde de frein (petit bras et bras long uniquement)</td></tr>
+  <tr><td><code>/*/broadcast</code></td><td>entrée</td><td>Active/désactive la télémétrie de ce contrôleur</td></tr>
+  <tr><td><code>/*/positionM1</code>, <code>/*/positionM2</code>, <code>/*/positionM3</code>*</td><td>sortie</td><td>Position actuelle du moteur</td></tr>
+  <tr><td><code>/*/calibrationStatus</code></td><td>sortie</td><td>Indique si le calibrage est terminé</td></tr>
+  <tr><td><code>/*/resumeReliability</code></td><td>sortie</td><td>État de reprise EEPROM : aucune / propre / approximative</td></tr>
+  <tr><td><code>/*/maxPossiblePositionM1</code>, <code>/*/minPossiblePositionM2</code>, etc.</td><td>sortie</td><td>Bornes de plage sûre en direct, dérivées des chariots voisins</td></tr>
+  <tr><td><code>/*/limitSwitch0N Triggered</code></td><td>sortie</td><td>Notification ponctuelle qu'un interrupteur de fin de course s'est déclenché</td></tr>
+  <tr><td><code>/teensy/error</code></td><td>sortie</td><td>Chaîne d'erreur générique (adresse OSC invalide, échec de décodage, etc.)</td></tr>
+</table>
+<p><em>* <code>destinationM3</code>/<code>positionM3</code> n'existent que sur le firmware du bras moyen et du bras long (3 moteurs).</em></p>
+
+<h3>Contrôleur du propulseur</h3>
+<table>
+  <tr><th>Adresse</th><th>Sens</th><th>Fonction</th></tr>
+  <tr><td><code>/booster/on</code></td><td>entrée</td><td>Active/désactive l'activation des bobines (met aussi le PWM à zéro immédiatement si désactivé)</td></tr>
+  <tr><td><code>/booster/strength</code></td><td>entrée</td><td>Amplitude PWM appliquée à une bobine active</td></tr>
+  <tr><td><code>/booster/activeZone</code></td><td>entrée</td><td>Sélectionne combien de paires d'électroaimants sont actives (0–3)</td></tr>
+  <tr><td><code>/booster/brakeState</code></td><td>entrée</td><td>Engage/relâche le frein du propulseur</td></tr>
+  <tr><td><code>/rotary/broadcast</code></td><td>entrée</td><td>Active/désactive la télémétrie</td></tr>
+  <tr><td><code>/rotary/value</code></td><td>sortie</td><td>Position brute de l'encodeur rotatif (envoyée toutes les 60 s)</td></tr>
+  <tr><td><code>/teensy/error</code></td><td>sortie</td><td>Chaîne d'erreur générique</td></tr>
+</table>
+
+<h2>Compilation</h2>
+<p>Chaque variante est son propre projet PlatformIO ciblant un Teensy 4.1 :</p>
+<pre><code>[env:teensy41]
+platform = teensy
+board = teensy41
+framework = arduino
+
+monitor_port = /dev/ttyACM0
+monitor_speed = 9600</code></pre>
+
+</body>
+</html>

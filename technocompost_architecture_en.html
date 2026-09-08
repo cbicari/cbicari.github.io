@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technocompost — Architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 14px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-accent { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .cycle-note { font-size: 12px; fill: var(--muted); font-style: italic; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Back to portfolio</a>
+  <a href="technocompost_architecture_fr.html">Français</a>
+</div>
+
+<h1>Technocompost</h1>
+<p class="subtitle">Architecture overview — project:
+  <a href="https://github.com/cbicari/technocompost">cbicari/technocompost</a>
+</p>
+
+<h2>Purpose</h2>
+<p>
+Technocompost is a self-sustaining, multi-agent image processing installation running on a cluster of
+Raspberry Pi 4 boards. Each Pi runs an <a href="https://github.com/openclaw">OpenClaw</a> AI agent connected
+to a shared local LM Studio inference server. The agents pass an image through a continuous decay-and-regrowth
+cycle, each Pi handling one stage and deciding for itself which transformation script to apply, informed by
+its own system sensors (CPU temperature, load, memory, disk, network).
+</p>
+<p>
+The repository contains <strong>two different orchestration modes</strong> built around the same shared
+infrastructure:
+</p>
+<ul>
+  <li><strong>Mode A — distributed agentic pipeline</strong> (<code>watcher.sh</code>, <code>decide.sh</code>,
+  <code>install.sh</code>, <code>README.md</code>): three Pis in a strict round-robin, each asking its local
+  AI agent to choose a script for a single whole image.</li>
+  <li><strong>Mode B — concurrent tile-based canvas</strong> (<code>tile_init.py</code>,
+  <code>tile_worker.py</code>): all Pis work at once on different tiles of one shared canvas image, without
+  needing a language-model decision per tile — script choice is weighted/randomised locally and tuned by
+  sensor "stress level".</li>
+</ul>
+<p>Both modes share the same physical setup, the same Syncthing-synced folder, and the same live display
+subsystem (<code>display_server.py</code> / <code>preview.py</code>).</p>
+
+<h2>Shared infrastructure</h2>
+<table>
+  <tr><th>Component</th><th>Role</th></tr>
+  <tr><td>3× Raspberry Pi 4 (<code>rpiagent01/02/03</code>)</td><td>One per pipeline stage</td></tr>
+  <tr><td>LM Studio server</td><td>Central inference backend (e.g. <code>google/gemma-4-e4b</code>, <code>nvidia/nemotron-3-nano-4b</code>), reachable at a fixed LAN address, used by every Pi's OpenClaw agent</td></tr>
+  <tr><td>OpenClaw</td><td>AI agent runtime installed on each Pi; can also talk peer-to-peer over its own ACP protocol when bound to <code>lan</code> mode</td></tr>
+  <tr><td>Syncthing</td><td>Keeps <code>~/.openclaw/workspace/tmp/</code> (and its <code>canvas/</code> subfolder) identical across all Pis</td></tr>
+  <tr><td><code>display_server.py</code></td><td>A pygame fullscreen viewer (on one designated "display Pi") that receives frames over TCP and cross-fades between them</td></tr>
+  <tr><td><code>preview.py</code></td><td>Tiny client used by processing scripts to stream a frame to <code>display_server.py</code> via <code>flush()</code></td></tr>
+</table>
+<p>
+<code>install.sh</code> sets up a fresh Pi: system packages (<code>git</code>, <code>curl</code>,
+<code>build-essential</code>, <code>feh</code>, <code>python3-pillow</code>, <code>inotify-tools</code>,
+<code>btop</code>), Syncthing, Node.js 22 LTS + npm, and OpenClaw, then symlinks the <code>scripts/</code>
+folder into <code>~/.openclaw/workspace/scripts</code>. The <code>openclaw</code> setup wizard (LM Studio base
+URL + model choice) and the optional <code>openclaw.service</code> systemd unit are configured manually
+afterwards, per the README.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 400" role="img">
+<title>Technocompost shared infrastructure</title>
+<desc>A cluster of three Raspberry Pi agents share a Syncthing-synced folder, all served by one central LM Studio inference server, with one Pi driving a fullscreen pygame display.</desc>
+<defs>
+<marker id="arrow1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+  <path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect class="box-coral" x="260" y="20" width="160" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">LM Studio server</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Shared inference backend</text>
+
+<line class="arrow" x1="340" y1="76" x2="340" y2="108" marker-end="url(#arrow1)"/>
+
+<rect class="box-teal" x="100" y="110" width="480" height="180" rx="20"/>
+<text class="title" x="340" y="132" text-anchor="middle">Raspberry Pi cluster</text>
+<text class="subtitle-svg" x="340" y="150" text-anchor="middle">Syncthing-synced shared folder</text>
+
+<rect class="box-purple" x="130" y="168" width="140" height="100" rx="12"/>
+<text class="title" x="200" y="192" text-anchor="middle">rpiagent01</text>
+<text class="subtitle-svg" x="200" y="212" text-anchor="middle">OpenClaw agent</text>
+<text class="subtitle-svg" x="200" y="230" text-anchor="middle">Stage 1</text>
+
+<rect class="box-purple" x="290" y="168" width="140" height="100" rx="12"/>
+<text class="title" x="360" y="192" text-anchor="middle">rpiagent02</text>
+<text class="subtitle-svg" x="360" y="212" text-anchor="middle">OpenClaw agent</text>
+<text class="subtitle-svg" x="360" y="230" text-anchor="middle">Stage 2</text>
+
+<rect class="box-purple" x="450" y="168" width="140" height="100" rx="12"/>
+<text class="title" x="520" y="192" text-anchor="middle">rpiagent03</text>
+<text class="subtitle-svg" x="520" y="212" text-anchor="middle">OpenClaw agent</text>
+<text class="subtitle-svg" x="520" y="230" text-anchor="middle">Stage 3</text>
+
+<line class="arrow" x1="340" y1="290" x2="340" y2="322" marker-end="url(#arrow1)"/>
+
+<rect class="box-amber" x="260" y="324" width="160" height="56" rx="8"/>
+<text class="title" x="340" y="346" text-anchor="middle">Display Pi</text>
+<text class="subtitle-svg" x="340" y="364" text-anchor="middle">Fullscreen pygame window</text>
+</svg>
+<figcaption>Shared infrastructure common to both orchestration modes</figcaption>
+</div>
+
+<h2>Mode A — distributed agentic pipeline</h2>
+<h3>Flow</h3>
+<pre><code>hummus.png → [rpiagent01] → gas.png → [rpiagent02] → liquid.png → [rpiagent03] → hummus.png → ...</code></pre>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 460" role="img">
+<title>Technocompost mode A: distributed agentic pipeline</title>
+<desc>Each Pi's watcher script detects the input file for its stage, decide.sh builds a sensor-aware prompt, the local OpenClaw agent picks a script and parameters, the script runs and writes an output file, and Syncthing carries that file to the next Pi, closing the loop.</desc>
+<defs>
+<marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+  <path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">watcher.sh</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Polls for this stage's keyword file</text>
+
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#arrow2)"/>
+
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">decide.sh</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Builds a sensor-aware prompt</text>
+
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#arrow2)"/>
+
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">OpenClaw agent</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Picks a script and its parameters</text>
+
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#arrow2)"/>
+
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Run chosen script</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Writes this stage's output file</text>
+
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#arrow2)"/>
+
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Syncthing sync</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Delivers the file to the next Pi</text>
+
+<text class="cycle-note" x="340" y="420" text-anchor="middle">↻ next Pi's watcher.sh picks up the file, restarting the cycle</text>
+</svg>
+<figcaption>Mode A — one full stage cycle, repeated by each Pi</figcaption>
+</div>
+
+<h3>Steps</h3>
+<ol>
+  <li><code>watcher.sh &lt;stage&gt;</code> polls the shared folder every 3 seconds for that stage's keyword
+  file (<code>hummus</code>/<code>gas</code>/<code>liquid</code>), tracking already-seen files in
+  <code>/tmp/watcher_seen_stage&lt;N&gt;.txt</code>. On first run it also starts <code>display_server.py</code>
+  if it isn't already running.</li>
+  <li>On a new file, it calls <code>decide.sh &lt;stage&gt; &lt;input_file&gt;</code>, which:
+    <ul>
+      <li>reads local sensors relevant to that stage (CPU temperature/load for stage 1, CPU/memory for stage
+      2, disk/network for stage 3);</li>
+      <li>shuffles its pool of candidate scripts and builds a one-line prompt asking the local OpenClaw agent
+      to pick exactly one script and set its numeric parameters, nudged toward gentler values unless the
+      sensors indicate stress, and discouraged from repeating its last choice;</li>
+      <li>sends that prompt to <code>openclaw agent --agent main</code>;</li>
+      <li>parses the script name and <code>--flag value</code> pairs out of the reply (falling back to the
+      first script in the pool if parsing fails);</li>
+      <li>runs <code>python3 &lt;script&gt; &lt;input&gt; &lt;output&gt; &lt;extra args&gt;</code> directly.</li>
+    </ul>
+  </li>
+  <li>The output file (<code>gas.png</code>, <code>liquid.png</code>, or <code>hummus.png</code>) is written
+  back into the shared folder, where Syncthing propagates it to every Pi; the next stage's
+  <code>watcher.sh</code> picks it up, closing the loop.</li>
+</ol>
+
+<h3>Stage → script pools</h3>
+<table>
+  <tr><th>Pi</th><th>Stage</th><th>Watches for</th><th>Produces</th><th>Script pool</th></tr>
+  <tr><td>rpiagent01 ("Fragmenteur")</td><td>1</td><td><code>hummus.png</code></td><td><code>gas.png</code></td><td><code>chunk_shuffle</code>, <code>conway</code>, <code>diffuse</code>, <code>erode</code>, <code>spore</code>, <code>degrade</code></td></tr>
+  <tr><td>rpiagent02 ("Hydrolyseur")</td><td>2</td><td><code>gas.png</code></td><td><code>liquid.png</code></td><td><code>hydrolyse</code>, <code>decompose</code>, <code>diffuse</code>, <code>erode</code></td></tr>
+  <tr><td>rpiagent03 ("Lignivore")</td><td>3</td><td><code>liquid.png</code></td><td><code>hummus.png</code></td><td><code>lignine</code>, <code>spore</code>, <code>decompose</code></td></tr>
+</table>
+<p>(The README additionally lists <code>mushroom</code>, <code>wind</code>, and <code>growth</code> as part
+of the broader script reference, used similarly by the pipeline.)</p>
+
+<h2>Mode B — concurrent tile-based canvas</h2>
+<p>
+This mode replaces <code>watcher.sh</code> + <code>decide.sh</code> entirely with
+<code>tile_worker.py</code>, run once per Pi/stage, and does not require a language-model call per operation
+— script choice is driven by local weighted random selection and a sensor-derived "stress level" instead.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 460" role="img">
+<title>Technocompost mode B: concurrent tile-based canvas</title>
+<desc>Every Pi runs the same loop on a shared grid of image tiles: claim a free tile, check local sensor stress and pick a persona script and preset, run it and blend the result back at low alpha, release the claim, then composite and stream the full canvas to the display.</desc>
+<defs>
+<marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+  <path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">tile_init.py</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Splits the seed image into tiles</text>
+
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#arrow3)"/>
+
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Claim a free tile</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Exclusive .claim file, 30s TTL</text>
+
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#arrow3)"/>
+
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Pick persona script</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Weighted by CPU stress level</text>
+
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#arrow3)"/>
+
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Run and blend</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Alpha-blends result back into tile</text>
+
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#arrow3)"/>
+
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Composite and flush</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Sends full canvas to display server</text>
+
+<text class="cycle-note" x="340" y="420" text-anchor="middle">↻ release the tile, then claim another and repeat</text>
+</svg>
+<figcaption>Mode B — one worker cycle, run concurrently by every Pi</figcaption>
+</div>
+
+<h3>Setup</h3>
+<p>
+<code>tile_init.py &lt;seed.png&gt; [--rows N] [--cols N] [--reset]</code> crops a seed image into an
+<code>R×C</code> grid (default 4×4) and writes each piece as <code>canvas/tile_&lt;row&gt;_&lt;col&gt;.png</code>.
+<code>--reset</code> lets the grid be reseeded from a new image without disturbing files that already exist
+otherwise.
+</p>
+
+<h3>Worker loop (per Pi, per stage)</h3>
+<p>Each <code>tile_worker.py --stage &lt;1|2|3&gt;</code> instance repeats, indefinitely:</p>
+<ol>
+  <li><strong>Sweep stale claims</strong> — any <code>.claim</code> file older than 30 seconds is removed, in
+  case a worker died mid-tile.</li>
+  <li><strong>Claim a free tile</strong> — tiles and coordinates are shuffled, and the first tile with no
+  <code>tile_RR_CC.png</code> missing and no existing <code>.claim</code> file is claimed atomically (an
+  exclusive file create, so two Pis can't grab the same tile).</li>
+  <li><strong>Read local sensor stress</strong> — CPU temperature and 1-minute load average are mapped to a
+  0/1/2 "cool / warm / hot" level.</li>
+  <li><strong>Pick a persona script</strong> — from that stage's weighted pool (the script used last time has
+  its odds roughly halved, to encourage variety) and its stress-matched parameter preset.</li>
+  <li><strong>Run the script</strong> on the tile into a scratch file, then <strong>alpha-blend</strong> the
+  result back onto the tile (<code>--alpha</code>, default 0.30) so changes accumulate gradually rather than
+  replacing the tile outright.</li>
+  <li><strong>Release the claim</strong>, <strong>recomposite the full canvas</strong> from all current tiles,
+  and <strong>stream it</strong> to <code>display_server.py</code> via <code>preview.flush()</code>.</li>
+  <li>Pause briefly (<code>--pause</code>, default 0.3 s) and repeat from step 1.</li>
+</ol>
+
+<h3>Stage → persona script pools</h3>
+<table>
+  <tr><th>Stage</th><th>Persona</th><th>Script pool</th></tr>
+  <tr><td>1</td><td>insects</td><td><code>fault_shift</code>, <code>chunk_hoard</code>, <code>repetition_smash</code>, <code>chunk_shuffle</code>, <code>byte_scramble</code>, <code>metadata_wipe</code></td></tr>
+  <tr><td>2</td><td>bacteria</td><td><code>gas_liquid</code>, <code>xor_cascade</code>, <code>bit_rotate</code>, <code>hydrolyse</code>, <code>memory_purge</code>, <code>activity_log</code></td></tr>
+  <tr><td>3</td><td>fungi</td><td><code>butterfly_permute</code>, <code>hilbert_shatter</code>, <code>cat_map_scramble</code>, <code>lignin_bore</code>, <code>lignine</code>, <code>mycelium_spread</code></td></tr>
+</table>
+<p>Each persona script lives under a stage-named subfolder (<code>scripts/insects/</code>,
+<code>scripts/bacteria/</code>, <code>scripts/fungi/</code>) and accepts a "cool / warm / hot" parameter
+preset selected by <code>tile_worker.py</code> according to the current sensor stress level.</p>
+
+<h2>Shared display subsystem</h2>
+<ul>
+  <li><strong><code>display_server.py</code></strong> runs on one designated Pi. It opens a fullscreen,
+  borderless pygame window and a TCP listener (default port 9876). Each incoming frame (raw
+  <code>width/height/channels</code> header + pixel bytes) replaces the currently shown frame; the code
+  includes a <code>smoothstep</code> helper for blending, intended to ease transitions between frames.</li>
+  <li><strong><code>preview.py</code></strong> exposes a single <code>flush(data)</code> function that any
+  processing script can call to push a frame (NumPy array or PIL image) to <code>display_server.py</code>
+  over TCP. It is a no-op when the environment variable <code>TECHNOCOMPOST_SILENT=1</code> is set — used by
+  <code>tile_worker.py</code> to keep the many short-lived per-tile subprocesses quiet, while the worker
+  itself sends the composited full canvas.</li>
+  <li>Both scripts are configured via <code>TECHNOCOMPOST_DISPLAY_IP</code>,
+  <code>TECHNOCOMPOST_DISPLAY_PORT</code>, <code>TECHNOCOMPOST_WIN_W</code>/<code>_H</code>, and
+  <code>TECHNOCOMPOST_INTERP_SEC</code> environment variables.</li>
+</ul>
+
+<h2>Typical usage</h2>
+<h3>Mode A</h3>
+<pre><code>./watcher.sh 1   # on rpiagent01
+./watcher.sh 2   # on rpiagent02
+./watcher.sh 3   # on rpiagent03</code></pre>
+<p>Drop an image named <code>hummus.png</code> into <code>~/.openclaw/workspace/tmp/</code> on any Pi to
+start the loop.</p>
+
+<h3>Mode B</h3>
+<pre><code>python3 scripts/tile_init.py seed.png --rows 4 --cols 4
+python3 scripts/tile_worker.py --stage 1 --display   # on the Pi with a screen
+python3 scripts/tile_worker.py --stage 2             # on the other Pis
+python3 scripts/tile_worker.py --stage 3</code></pre>
+
+<h3>Displaying a single image directly</h3>
+<pre><code>DISPLAY=:0 feh --fullscreen /path/to/image.png &amp;
+killall feh   # close</code></pre>
+
+</body>
+</html>

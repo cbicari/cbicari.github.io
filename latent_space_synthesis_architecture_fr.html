@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>realtime_latent_space_synthesis — Vue d'ensemble de l'architecture</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Retour au portfolio</a>
+  <a href="latent_space_synthesis_architecture_en.html">English</a>
+</div>
+
+<h1>realtime_latent_space_synthesis</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture — projet :
+  <a href="https://github.com/cbicari/latent_space_synthesis">cbicari/latent_space_synthesis</a>
+</p>
+
+<h2>Objectif</h2>
+<p>
+Synthèse audio en espace latent en temps réel sur un Raspberry Pi 5, utilisant
+<a href="https://github.com/acids-ircam/nn_tilde"><code>nn~</code></a> (l'externe Pure Data d'IRCAM/ACIDS qui
+exécute un réseau de neurones, ici un modèle <a href="https://github.com/acids-ircam/RAVE">RAVE</a>, à
+l'intérieur d'un patch audio). Les gestes de la main d'une personne — ou, en alternative, un petit contrôleur
+MIDI — pilotent en direct l'espace latent du modèle, de sorte que le timbre du synthétiseur neuronal réagit
+au mouvement ou à des boutons/touches en temps réel.
+</p>
+
+<h2>Vue d'ensemble du pipeline</h2>
+<p>Deux chemins de contrôle alternatifs convergent vers le même patch Pure Data, qui pilote le moteur de
+synthèse neuronale :</p>
+<ul>
+  <li><strong>Contrôle gestuel</strong> : un script de suivi de main basé sur webcam
+  (<code>mediapipe_OSC/</code>) diffuse les données de points de repère via OSC vers
+  <a href="http://www.wekinator.org/">Wekinator</a>, qui apprend une correspondance entre le geste et les
+  paramètres de contrôle et envoie sa sortie plus loin via OSC.</li>
+  <li><strong>Contrôle MIDI (alternatif)</strong> : un clavier/contrôleur Akai MPK mini est connecté
+  directement à un second patch Pure Data, contournant entièrement la caméra et Wekinator pour une surface de
+  contrôle manuelle plus simple et plus prévisible.</li>
+</ul>
+<p>
+Dans les deux cas, les valeurs de contrôle résultantes atteignent un patch Pure Data fonctionnant sous JACK
+audio, qui les transmet à <code>nn~</code> — le modèle RAVE chargé — pour la synthèse audio neuronale en
+temps réel, JACK gérant les entrées/sorties audio proprement dites sur le Raspberry Pi 5.
+</p>
+
+<h2>Structure du dépôt</h2>
+<table>
+  <tr><th>Chemin</th><th>Rôle</th></tr>
+  <tr><td><code>mediapipe_OSC/</code></td><td>Script de suivi de main et son environnement virtuel Python ; diffuse les points de repère via OSC</td></tr>
+  <tr><td><code>wekinator/</code></td><td><code>WekiMini.jar</code> (Wekinator) inclus, exécuté sous un runtime Java 8</td></tr>
+  <tr><td><code>rave_models/</code></td><td>Fichier(s) de modèle RAVE pré-entraîné chargé(s) par <code>nn~</code> dans le patch Pure Data</td></tr>
+  <tr><td><code>nn_tilde</code></td><td>Référence à l'externe Pure Data <code>nn~</code> utilisé pour la synthèse audio neuronale</td></tr>
+  <tr><td><code>latent_space_synthesis_OSC_control.pd</code></td><td>Patch principal : reçoit l'OSC (de Wekinator) et pilote <code>nn~</code></td></tr>
+  <tr><td><code>latent_space_synthesis_midiController_AkaiMPKmini.pd</code></td><td>Patch alternatif : pilote <code>nn~</code> directement depuis l'entrée MIDI de l'Akai MPK mini</td></tr>
+  <tr><td><code>launch_demo.sh</code></td><td>Démarre ensemble JACK, Pure Data, Wekinator, et le script de suivi de main</td></tr>
+  <tr><td><code>kill_all.sh</code></td><td>Arrête tout ce que <code>launch_demo.sh</code> a démarré</td></tr>
+</table>
+
+<h2>Pipeline de données</h2>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 330" role="img">
+<title>Pipeline de données de latent_space_synthesis</title>
+<desc>Deux sources de contrôle alternatives, le suivi gestuel de la main via Wekinator ou un contrôleur MIDI Akai MPK mini direct, alimentent toutes deux un patch Pure Data qui pilote le modèle audio neuronal RAVE via nn tilde, produisant un audio en temps réel via JACK.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-purple" x="70" y="20" width="250" height="56" rx="8"/>
+<text class="title" x="195" y="42" text-anchor="middle">Contrôle gestuel</text>
+<text class="subtitle-svg" x="195" y="60" text-anchor="middle">Suivi de main → Wekinator, via OSC</text>
+<rect class="box-purple" x="360" y="20" width="250" height="56" rx="8"/>
+<text class="title" x="485" y="42" text-anchor="middle">Contrôle MIDI (alternatif)</text>
+<text class="subtitle-svg" x="485" y="60" text-anchor="middle">Akai MPK mini, direct vers Pure Data</text>
+<path class="arrow" d="M195 76 L195 93 L340 93 L340 108" marker-end="url(#a1f)"/>
+<path class="arrow" d="M485 76 L485 93 L340 93 L340 108" marker-end="url(#a1f)"/>
+<rect class="box" x="220" y="110" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="132" text-anchor="middle">Patch Pure Data</text>
+<text class="subtitle-svg" x="340" y="150" text-anchor="middle">Route l'OSC/MIDI vers les contrôles nn~</text>
+<line class="arrow" x1="340" y1="166" x2="340" y2="188" marker-end="url(#a1f)"/>
+<rect class="box-coral" x="220" y="190" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="212" text-anchor="middle">nn~ (modèle RAVE)</text>
+<text class="subtitle-svg" x="340" y="230" text-anchor="middle">Synthèse audio neuronale</text>
+<line class="arrow" x1="340" y1="246" x2="340" y2="268" marker-end="url(#a1f)"/>
+<rect class="box-amber" x="220" y="270" width="240" height="56" rx="8"/>
+<text class="title" x="340" y="292" text-anchor="middle">Sortie audio JACK</text>
+<text class="subtitle-svg" x="340" y="310" text-anchor="middle">Audio en temps réel sur Raspberry Pi 5</text>
+</svg>
+<figcaption>Deux chemins de contrôle convergeant vers Pure Data → nn~ → audio JACK</figcaption>
+</div>
+
+<ul>
+  <li><strong>Suivi de main → Wekinator</strong> : le script de suivi diffuse les coordonnées des points de
+  repère de la main via OSC ; Wekinator associe ces données gestuelles en direct aux paramètres de contrôle
+  attendus par le patch, selon le même flux enregistrement/entraînement/exécution que dans le dépôt
+  compagnon <a href="https://github.com/cbicari/CV_ML_intermedia_pipeline_workshop"><code>CV_ML_intermedia_pipeline_workshop</code></a>.</li>
+  <li><strong>Patch Pure Data</strong> : <code>latent_space_synthesis_OSC_control.pd</code> reçoit la sortie
+  OSC de Wekinator et la route vers les entrées de contrôle de <code>nn~</code> (typiquement les dimensions
+  latentes et/ou d'autres paramètres RAVE exposés).</li>
+  <li><strong><code>nn~</code> (modèle RAVE)</strong> : charge un modèle pré-entraîné depuis
+  <code>rave_models/</code> et effectue la synthèse audio neuronale proprement dite, décodant le vecteur
+  latent (potentiellement piloté par le geste) en un flux audio en temps réel.</li>
+  <li><strong>Audio JACK</strong> : <code>qjackctl</code> fournit le moteur audio à faible latence à travers
+  lequel Pure Data restitue le son, sur le Raspberry Pi 5.</li>
+  <li><strong>Chemin MIDI alternatif</strong> : <code>latent_space_synthesis_midiController_AkaiMPKmini.pd</code>
+  remplace la chaîne caméra+Wekinator par une entrée MIDI CC/note directe depuis un Akai MPK mini, pour un
+  contrôle manuel plus rapide ou plus précis sans avoir besoin d'exécuter le pipeline de vision.</li>
+</ul>
+
+<h2>Lancer et arrêter la démo</h2>
+<p><code>launch_demo.sh</code> démarre l'ensemble du pipeline de contrôle gestuel en une seule fois, dans cet
+ordre :</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 440" role="img">
+<title>Séquence de démarrage de launch_demo.sh</title>
+<desc>launch_demo.sh démarre quatre processus en arrière-plan dans l'ordre : l'audio JACK, le patch de contrôle OSC Pure Data, Wekinator, et le script de suivi de main, enregistrant chaque identifiant de processus dans un fichier afin que kill_all.sh puisse tous les arrêter plus tard.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">launch_demo.sh</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Démarre tous les processus dans l'ordre</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Audio JACK (qjackctl)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Démarre avec lecture automatique</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Pure Data (-jack)</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Patch de contrôle OSC</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Wekinator (WekiMini.jar)</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Runtime Java 8</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Suivi de main (venv)</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">mediapipe_OSC/hand_recognition.py</text>
+<text class="note" x="340" y="415" text-anchor="middle">Les 4 PID sont enregistrés dans process_pids.txt</text>
+<text class="note" x="340" y="433" text-anchor="middle">kill_all.sh lit ce fichier pour arrêter chaque processus</text>
+</svg>
+<figcaption>Ordre de démarrage de launch_demo.sh, défait par kill_all.sh</figcaption>
+</div>
+
+<p>Le PID de chaque processus est ajouté à <code>process_pids.txt</code>.
+<strong><code>kill_all.sh</code></strong> lit ce fichier et tue chaque PID qu'il contient, puis supprime le
+fichier — l'arrêt correspondant à ce que <code>launch_demo.sh</code> a démarré.</p>
+<p>Pour utiliser le chemin du contrôleur MIDI à la place, ouvrez directement
+<code>latent_space_synthesis_midiController_AkaiMPKmini.pd</code> dans Pure Data (sous JACK) plutôt que
+d'exécuter <code>launch_demo.sh</code>, puisque ce chemin n'a besoin ni de Wekinator ni du script de suivi de
+main.</p>
+
+<h2>Configuration (Raspberry Pi 5)</h2>
+<p>Condensé depuis le README ; voir <code>install/raspberrypi.sh</code> dans le dépôt et les instructions en
+amont de <a href="https://github.com/acids-ircam/nn_tilde"><code>nn_tilde</code></a> pour tous les détails.</p>
+
+<h3>1. Installer <code>uv</code> (si pas déjà présent)</h3>
+<pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env   # ou redémarrer votre shell</code></pre>
+
+<h3>2. Créer un environnement virtuel Python 3.9 et installer les dépendances</h3>
+<pre><code>uv venv nn_venv --python 3.9
+uv pip install pip
+
+sudo apt update
+sudo apt install -y cmake build-essential git puredata puredata-dev python3 python3-pip
+python3 -m pip install torch
+
+LIBTORCH=/home/&lt;utilisateur&gt;/.../lib/python3.9/site-packages/torch/</code></pre>
+
+<h3>3. Compiler et installer <code>nn~</code>, à la dernière version prise en charge sur Raspberry Pi</h3>
+<pre><code>git clone https://github.com/acids-ircam/nn_tilde.git
+cd nn_tilde/
+git checkout v1.5.6
+
+mkdir build && cd build
+cmake ../src/ -DCMAKE_PREFIX_PATH=$LIBTORCH -DCMAKE_BUILD_TYPE=Release
+make
+sudo mkdir -p /usr/local/lib/pd-externals/
+sudo cp frontend/puredata/nn_tilde/nn~.pd_linux /usr/local/lib/pd-externals/
+cd ../../
+rm -fr nn_tilde</code></pre>
+
+<h3>4. Contourner l'exigence de version Java de Wekinator</h3>
+<p>WekiMini a spécifiquement besoin de Java 8 pour sauvegarder correctement les projets :</p>
+<pre><code>wget https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u402-b06/OpenJDK8U-jdk_aarch64_linux_hotspot_8u402b06.tar.gz
+tar -xzf OpenJDK8U-jdk_aarch64_linux_hotspot_8u402b06.tar.gz
+sudo mv jdk8u402-b06 /opt/java8
+
+# Exécuter Wekinator avec :
+/opt/java8/bin/java -jar /chemin/vers/WekiMini.jar</code></pre>
+
+<h2>Construit avec</h2>
+<ul>
+  <li><a href="https://github.com/acids-ircam/nn_tilde"><code>nn~</code></a> /
+  <a href="https://github.com/acids-ircam/RAVE">RAVE</a> (IRCAM/ACIDS) — synthèse audio neuronale au sein de
+  Pure Data</li>
+  <li><a href="https://puredata.info/">Pure Data</a> + JACK — environnement de patch et moteur audio à
+  faible latence</li>
+  <li><a href="http://www.wekinator.org/">Wekinator</a> (WekiMini, Java 8) — apprentissage automatique
+  geste → paramètre</li>
+  <li><a href="https://developers.google.com/mediapipe">MediaPipe</a> — suivi des points de repère de la
+  main</li>
+  <li><a href="https://astral.sh/uv/"><code>uv</code></a> — gestion de l'environnement Python sur le
+  Raspberry Pi</li>
+</ul>
+
+</body>
+</html>
