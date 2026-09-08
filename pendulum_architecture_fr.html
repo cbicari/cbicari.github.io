@@ -105,15 +105,15 @@ pour les envois périodiques ou déclenchés par événement).
 <line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a1f)"/>
 <rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="202" text-anchor="middle">4× contrôleurs Teensy 4.1</text>
-<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Petit/moyen/long bras + propulseur</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle" style="font-size:11.9px">Petit/moyen/long bras + propulseur</text>
 <line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a1f)"/>
 <rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="282" text-anchor="middle">Pilotes moteur / bobine</text>
-<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Cartes Cytron ou bobine PWM+DIR</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:11.6px">Cartes Cytron ou bobine PWM+DIR</text>
 <line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a1f)"/>
 <rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="362" text-anchor="middle">Actionneurs physiques</text>
-<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Moteurs de chariot / électroaimants</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:11.8px">Moteurs de chariot / électroaimants</text>
 <text class="cycle-note" x="340" y="410" text-anchor="middle">Encodeurs et fins de course renvoient la position à leur Teensy</text>
 </svg>
 <figcaption>Topologie matérielle : réseau → NGIMU → contrôleurs → pilotes → actionneurs</figcaption>
@@ -151,23 +151,23 @@ même paire générique <code>Receive.cpp</code> / <code>Send.cpp</code> :
 <defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="42" text-anchor="middle">Entrée OSC (SLIP)</text>
-<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Série USB + série auxiliaire NGIMU</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Série USB + série</tspan><tspan x="340" dy="13">auxiliaire NGIMU</tspan></text>
 <line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
 <rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="122" text-anchor="middle">Répartition par adresse</text>
-<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Met à jour destinations et indicateurs</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:11.3px">Met à jour destinations et indicateurs</text>
 <line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2f)"/>
 <rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="202" text-anchor="middle">Boucle de contrôle</text>
-<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Fins de course, calibrage, mouvement en boucle fermée</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle" style="font-size:7.4px">Fins de course, calibrage, mouvement en boucle fermée</text>
 <line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2f)"/>
 <rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="282" text-anchor="middle">Entrées/sorties matérielles</text>
-<text class="subtitle-svg" x="340" y="300" text-anchor="middle">PWM+DIR en sortie, encodeurs/fins de course en entrée</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:7.3px">PWM+DIR en sortie, encodeurs/fins de course en entrée</text>
 <line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2f)"/>
 <rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="362" text-anchor="middle">Télémétrie planifiée</text>
-<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Position, statut, erreurs envoyés via série</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:10.1px">Position, statut, erreurs envoyés via série</text>
 <text class="cycle-note" x="340" y="410" text-anchor="middle">↻ se répète à chaque itération de la boucle principale</text>
 </svg>
 <figcaption>Boucle firmware partagée, commune aux quatre variantes de contrôleur</figcaption>
@@ -202,7 +202,7 @@ voisins dans <code>update_motor_positions()</code>.
 <text class="subtitle-svg" x="320" y="40" text-anchor="middle">Base → extrémité</text>
 <rect class="box" x="40" y="80" width="128" height="60" rx="10"/>
 <text class="title" x="104" y="102" text-anchor="middle">Propulseur</text>
-<text class="subtitle-svg" x="104" y="120" text-anchor="middle">Pilote de bobines, base rotative</text>
+<text class="subtitle-svg" x="104" y="114" text-anchor="middle"><tspan x="104" dy="0">Pilote de bobines,</tspan><tspan x="104" dy="13">base rotative</tspan></text>
 <line class="arrow" x1="168" y1="110" x2="181" y2="110" marker-end="url(#a3f)"/>
 <rect class="box-purple" x="181" y="80" width="128" height="60" rx="10"/>
 <text class="title" x="245" y="102" text-anchor="middle">Bras long</text>
@@ -213,7 +213,7 @@ voisins dans <code>update_motor_positions()</code>.
 <text class="subtitle-svg" x="386" y="120" text-anchor="middle">3 chariots</text>
 <line class="arrow" x1="450" y1="110" x2="463" y2="110" marker-end="url(#a3f)"/>
 <rect class="box-amber" x="463" y="80" width="128" height="60" rx="10"/>
-<text class="title" x="527" y="102" text-anchor="middle">Petit bras (extrémité)</text>
+<text class="title" x="527" y="102" text-anchor="middle" style="font-size:11.3px">Petit bras (extrémité)</text>
 <text class="subtitle-svg" x="527" y="120" text-anchor="middle">2 chariots</text>
 </svg>
 <figcaption>Chaîne mécanique de la base (propulseur) à l'extrémité (petit bras)</figcaption>

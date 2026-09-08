@@ -79,20 +79,20 @@ que les personnes autour d'elle lui font subir la même chose depuis l'autre dir
 <desc>Trois caméras de profondeur Orbbec alimentent Carto, un programme de reconstruction volumétrique basé sur Godot, qui pilote à la fois la projection sphérique vue par les spectateurs et conditionne un pipeline visuel génératif Stable Diffusion avec le nuage de points reconstruit.</desc>
 <defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
-<text class="title" x="340" y="42" text-anchor="middle">3 caméras de profondeur Orbbec</text>
-<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Capture volumétrique des spectateurs</text>
+<text class="title" x="340" y="42" text-anchor="middle" style="font-size:11.7px">3 caméras de profondeur Orbbec</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Capture volumétrique</tspan><tspan x="340" dy="13">des spectateurs</tspan></text>
 <line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1f)"/>
 <rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="122" text-anchor="middle">Carto (moteur Godot)</text>
-<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Reconstruit la scène en nuage de points</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:10.3px">Reconstruit la scène en nuage de points</text>
 <path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a1f)"/>
 <path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a1f)"/>
 <rect class="box-teal" x="70" y="190" width="210" height="56" rx="8"/>
 <text class="title" x="175" y="212" text-anchor="middle">Projection sphérique</text>
-<text class="subtitle-svg" x="175" y="230" text-anchor="middle">Sphère d'1m, projecteur caché sous la table</text>
+<text class="subtitle-svg" x="175" y="224" text-anchor="middle"><tspan x="175" dy="0">Sphère d'1m, projecteur</tspan><tspan x="175" dy="13">caché sous la table</tspan></text>
 <rect class="box-coral" x="400" y="190" width="210" height="56" rx="8"/>
 <text class="title" x="505" y="212" text-anchor="middle">Pipeline visuel génératif</text>
-<text class="subtitle-svg" x="505" y="230" text-anchor="middle">Le nuage de points conditionne Stable Diffusion</text>
+<text class="subtitle-svg" x="505" y="224" text-anchor="middle"><tspan x="505" dy="0">Le nuage de points</tspan><tspan x="505" dy="13">conditionne Stable Diffusion</tspan></text>
 <text class="note" x="340" y="285" text-anchor="middle">Les spectateurs autour de la sphère deviennent l'entrée en direct du modèle génératif</text>
 </svg>
 <figcaption>La capture de profondeur se divise vers l'affichage de la sphère et l'entrée du pipeline génératif</figcaption>
@@ -116,24 +116,24 @@ présentes constituent, en effet, l'entrée en direct du modèle.
 <defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="42" text-anchor="middle">Caméra fisheye AIDA</text>
-<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Observe l'ensemble de l'installation</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Observe l'ensemble</tspan><tspan x="340" dy="13">de l'installation</tspan></text>
 <line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
 <rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
-<text class="title" x="340" y="122" text-anchor="middle">Modèle vision-langage LM Studio</text>
-<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Décrit la scène, en anglais et en français</text>
+<text class="title" x="340" y="122" text-anchor="middle" style="font-size:11.6px">Modèle vision-langage LM Studio</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:10.2px">Décrit la scène, en anglais et en français</text>
 <path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a2f)"/>
 <path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a2f)"/>
 <rect class="box-teal" x="70" y="190" width="210" height="56" rx="8"/>
-<text class="title" x="175" y="212" text-anchor="middle">Superposition de texte sur la sphère</text>
-<text class="subtitle-svg" x="175" y="230" text-anchor="middle">Par-dessus le nuage de points et les visuels</text>
+<text class="title" x="175" y="212" text-anchor="middle" style="font-size:11.2px">Superposition de texte sur la sphère</text>
+<text class="subtitle-svg" x="175" y="224" text-anchor="middle"><tspan x="175" dy="0">Par-dessus le nuage de</tspan><tspan x="175" dy="13">points et les visuels</tspan></text>
 <rect class="box-amber" x="400" y="190" width="210" height="56" rx="8"/>
 <text class="title" x="505" y="212" text-anchor="middle">Extraction de mots-clés</text>
-<text class="subtitle-svg" x="505" y="230" text-anchor="middle">1 à 3 mots-clés concrets, anglais seulement</text>
+<text class="subtitle-svg" x="505" y="224" text-anchor="middle"><tspan x="505" dy="0">1 à 3 mots-clés concrets,</tspan><tspan x="505" dy="13">anglais seulement</tspan></text>
 <line class="arrow" x1="505" y1="246" x2="505" y2="268" marker-end="url(#a2f)"/>
 <path class="arrow" d="M505 268 L505 280 L340 280 L340 298" marker-end="url(#a2f)"/>
 <rect class="box-coral" x="240" y="300" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="322" text-anchor="middle">Pipeline visuel génératif</text>
-<text class="subtitle-svg" x="340" y="340" text-anchor="middle">Les mots-clés orientent l'imagerie évolutive</text>
+<text class="subtitle-svg" x="340" y="340" text-anchor="middle" style="font-size:9.6px">Les mots-clés orientent l'imagerie évolutive</text>
 <text class="cycle-note" x="340" y="390" text-anchor="middle">↻ de nouveaux visuels apparaissent sur la sphère et sont observés à nouveau</text>
 <text class="cycle-note" x="340" y="408" text-anchor="middle">par la même caméra — l'installation s'observant évoluer elle-même</text>
 </svg>
@@ -167,23 +167,23 @@ messages OSC.
 <defs><marker id="a3f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="42" text-anchor="middle">capture_loop_srt.sh</text>
-<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Rafraîchit un JPEG toutes les ~10s via SRT</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Rafraîchit un JPEG</tspan><tspan x="340" dy="13">toutes les ~10s via SRT</tspan></text>
 <line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3f)"/>
 <rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="122" text-anchor="middle">manage_lmstudio.sh</text>
-<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Assure le serveur actif, modèle chargé en CPU seul</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:8.0px">Assure le serveur actif, modèle chargé en CPU seul</text>
 <line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3f)"/>
 <rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="202" text-anchor="middle">analyze_latest_frame.py</text>
-<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Passe anglaise, puis passe française</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle" style="font-size:11.2px">Passe anglaise, puis passe française</text>
 <line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3f)"/>
 <rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="282" text-anchor="middle">summarize_keywords.py</text>
-<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Réduit le texte anglais en mots-clés</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:11.7px">Réduit le texte anglais en mots-clés</text>
 <line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a3f)"/>
 <rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="362" text-anchor="middle">Sortie OSC, 3 ports</text>
-<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Descriptions et mots-clés vers les visuels</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:10.1px">Descriptions et mots-clés vers les visuels</text>
 <text class="note" x="340" y="415" text-anchor="middle">overnight_monitor.sh tourne indépendamment, journalisant GPU, processus,</text>
 <text class="note" x="340" y="433" text-anchor="middle">et disque toutes les 60s pour un fonctionnement de nuit sans surveillance</text>
 </svg>

@@ -155,15 +155,15 @@ All four firmware variants share the same overall loop shape, built from the sam
 <line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2)"/>
 <rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="202" text-anchor="middle">Control loop</text>
-<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Limit switches, calibration, closed-loop move</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle" style="font-size:9.3px">Limit switches, calibration, closed-loop move</text>
 <line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2)"/>
 <rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="282" text-anchor="middle">Hardware I/O</text>
-<text class="subtitle-svg" x="340" y="300" text-anchor="middle">PWM+DIR out, encoders/switches in</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:11.3px">PWM+DIR out, encoders/switches in</text>
 <line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2)"/>
 <rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
 <text class="title" x="340" y="362" text-anchor="middle">Scheduled telemetry</text>
-<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Position, status, errors out over serial</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:11.2px">Position, status, errors out over serial</text>
 <text class="cycle-note" x="340" y="410" text-anchor="middle">↻ repeats every main-loop iteration</text>
 </svg>
 <figcaption>Shared firmware loop, common to all four controller variants</figcaption>
@@ -196,7 +196,7 @@ is continuously recomputed relative to its neighbours in <code>update_motor_posi
 <text class="subtitle-svg" x="320" y="40" text-anchor="middle">Base → tip</text>
 <rect class="box" x="40" y="80" width="128" height="60" rx="10"/>
 <text class="title" x="104" y="102" text-anchor="middle">Booster</text>
-<text class="subtitle-svg" x="104" y="120" text-anchor="middle">Coil driver, rotary base</text>
+<text class="subtitle-svg" x="104" y="114" text-anchor="middle"><tspan x="104" dy="0">Coil driver,</tspan><tspan x="104" dy="13">rotary base</tspan></text>
 <line class="arrow" x1="168" y1="110" x2="181" y2="110" marker-end="url(#a3)"/>
 <rect class="box-purple" x="181" y="80" width="128" height="60" rx="10"/>
 <text class="title" x="245" y="102" text-anchor="middle">Long arm</text>
