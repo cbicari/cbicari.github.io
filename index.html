@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Charles Bicari — Portfolio</title>
+<title>Latent Systems — Portfolio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -70,6 +70,10 @@
 
   /* ---------- hero ---------- */
   .hero { padding: 72px 0 40px; }
+  .byline {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-faint);
+    margin: 0 0 14px;
+  }
   .hero h1 { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; max-width: 18ch; }
   .hero .sub { margin-top: 18px; max-width: 62ch; color: var(--ink-muted); font-size: 16.5px; }
   .hero .sub strong { color: var(--ink); font-weight: 600; }
@@ -118,7 +122,7 @@
 
 <header class="site">
   <div class="wrap">
-    <div class="brand">Charles Bicari<span>.</span></div>
+    <div class="brand">Latent Systems<span>.</span></div>
     <div class="header-right">
       <nav class="links">
         <a href="portfolio.html">
@@ -137,6 +141,10 @@
 
 <section class="hero">
   <div class="wrap">
+    <p class="byline">
+      <span data-lang="en">Charles Bicari — embedded systems, intermedia &amp; AI</span>
+      <span data-lang="fr" hidden>Charles Bicari — systèmes embarqués, intermédia et IA</span>
+    </p>
     <h1>
       <span data-lang="en">Embedded systems for hardware that has to work in real time.</span>
       <span data-lang="fr" hidden>Des systèmes embarqués pour du matériel qui doit fonctionner en temps réel.</span>
