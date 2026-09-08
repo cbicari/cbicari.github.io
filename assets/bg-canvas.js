@@ -73,7 +73,7 @@
     // mapping as the original sketch (~90 to ~155 wraps end to end).
     var factor = 80 - (tx / Math.max(W, 1)) * 34.5;
     // A slow envelope makes the whole figure expand and contract in place.
-    var envelope = 0.72 + 0.28 * Math.sin(t * 0.05);
+    var envelope = 0.72 + 0.28 * Math.sin(t * 0.00026);
     var sizeFactor = W < 500 ? 0.65 : 1;
     var baseRad = Math.min(W, H) * 0.5 * envelope * sizeFactor;
 
