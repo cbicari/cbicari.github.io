@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation volumétrique auto-observante — Vue d'ensemble de l'architecture</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  .cycle-note { font-size: 12px; fill: var(--muted); font-style: italic; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="portfolio.html">← Retour au portfolio</a>
+  <a href="aida_installation_architecture_en.html">English</a>
+</div>
+
+<h1>Installation volumétrique auto-observante</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture — sous-système documenté : <strong>aida-stream-llm-analysis</strong></p>
+
+<h2>Objectif</h2>
+<p>
+Les spectateurs se tiennent autour d'une sphère d'un mètre. Un projecteur caché sous la table restitue en
+direct sur sa surface un nuage de points les représentant, reconstruit à partir de trois caméras de
+profondeur. Ce même nuage de points conditionne aussi un pipeline visuel génératif, de sorte que le
+mouvement des spectateurs façonne littéralement l'imagerie apparaissant sur la sphère. Une caméra séparée
+observe l'ensemble de l'installation depuis l'extérieur, et un modèle vision-langage décrit ce qu'il voit —
+en deux langues — projetant cette description sous forme de texte sur la sphère, tandis qu'une version
+condensée de celle-ci est réinjectée comme un prompt qui oriente l'évolution suivante de l'imagerie générée.
+L'installation s'observe elle-même, s'explique elle-même, et change à cause de ce qu'elle a dit — pendant
+que les personnes autour d'elle lui font subir la même chose depuis l'autre direction.
+</p>
+
+<h2>Capture volumétrique et projection sphérique</h2>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 320" role="img">
+<title>Capture volumétrique et projection sphérique</title>
+<desc>Trois caméras de profondeur Orbbec alimentent Carto, un programme de reconstruction volumétrique basé sur Godot, qui pilote à la fois la projection sphérique vue par les spectateurs et conditionne un pipeline visuel génératif Stable Diffusion avec le nuage de points reconstruit.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">3 caméras de profondeur Orbbec</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Capture volumétrique des spectateurs</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Carto (moteur Godot)</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Reconstruit la scène en nuage de points</text>
+<path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a1f)"/>
+<path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a1f)"/>
+<rect class="box-teal" x="70" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="212" text-anchor="middle">Projection sphérique</text>
+<text class="subtitle-svg" x="175" y="230" text-anchor="middle">Sphère d'1m, projecteur caché sous la table</text>
+<rect class="box-coral" x="400" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="212" text-anchor="middle">Pipeline visuel génératif</text>
+<text class="subtitle-svg" x="505" y="230" text-anchor="middle">Le nuage de points conditionne Stable Diffusion</text>
+<text class="note" x="340" y="285" text-anchor="middle">Les spectateurs autour de la sphère deviennent l'entrée en direct du modèle génératif</text>
+</svg>
+<figcaption>La capture de profondeur se divise vers l'affichage de la sphère et l'entrée du pipeline génératif</figcaption>
+</div>
+
+<p>
+Trois caméras de profondeur Orbbec capturent les spectateurs autour de la table. <strong>Carto</strong>, un
+programme personnalisé de capture volumétrique et de reconstruction construit sur le moteur Godot,
+transforme cela en un nuage de points en direct. Ce nuage de points pilote deux choses à la fois : l'image
+projetée sur la sphère d'un mètre (via un projecteur caché sous la table de l'installation), et l'entrée de
+conditionnement d'un pipeline visuel génératif Stable Diffusion — de sorte que les personnes physiquement
+présentes constituent, en effet, l'entrée en direct du modèle.
+</p>
+
+<h2>La boucle d'auto-observation par LLM</h2>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Boucle de rétroaction d'auto-observation par LLM</title>
+<desc>Une caméra fisheye AIDA observe l'ensemble de l'installation. Un modèle vision-langage dans LM Studio décrit la scène en anglais et en français. Cette description est à la fois projetée en texte sur la sphère et réduite en mots-clés, qui orientent le pipeline visuel génératif. Les nouveaux visuels apparaissent sur la sphère et sont observés à nouveau par la même caméra, bouclant la boucle.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Caméra fisheye AIDA</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Observe l'ensemble de l'installation</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Modèle vision-langage LM Studio</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Décrit la scène, en anglais et en français</text>
+<path class="arrow" d="M340 156 L340 173 L175 173 L175 190" marker-end="url(#a2f)"/>
+<path class="arrow" d="M340 156 L340 173 L505 173 L505 190" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="70" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="175" y="212" text-anchor="middle">Superposition de texte sur la sphère</text>
+<text class="subtitle-svg" x="175" y="230" text-anchor="middle">Par-dessus le nuage de points et les visuels</text>
+<rect class="box-amber" x="400" y="190" width="210" height="56" rx="8"/>
+<text class="title" x="505" y="212" text-anchor="middle">Extraction de mots-clés</text>
+<text class="subtitle-svg" x="505" y="230" text-anchor="middle">1 à 3 mots-clés concrets, anglais seulement</text>
+<line class="arrow" x1="505" y1="246" x2="505" y2="268" marker-end="url(#a2f)"/>
+<path class="arrow" d="M505 268 L505 280 L340 280 L340 298" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="240" y="300" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="322" text-anchor="middle">Pipeline visuel génératif</text>
+<text class="subtitle-svg" x="340" y="340" text-anchor="middle">Les mots-clés orientent l'imagerie évolutive</text>
+<text class="cycle-note" x="340" y="390" text-anchor="middle">↻ de nouveaux visuels apparaissent sur la sphère et sont observés à nouveau</text>
+<text class="cycle-note" x="340" y="408" text-anchor="middle">par la même caméra — l'installation s'observant évoluer elle-même</text>
+</svg>
+<figcaption>Une boucle fermée : la propre sortie de l'installation devient sa prochaine entrée</figcaption>
+</div>
+
+<p>
+Une caméra AIDA N200, montée pour voir l'ensemble de l'installation (pas seulement la sphère), diffuse via
+SRT. Un modèle vision-langage exécuté localement dans LM Studio décrit périodiquement ce qu'il voit, une
+fois en anglais et une fois en français, chacune envoyée comme son propre message OSC et projetée en texte
+par-dessus la sphère — superposée à la fois au nuage de points volumétrique et aux visuels générés. La
+description anglaise est en outre réduite à un à trois mots-clés concrets, qui sont réinjectés dans le
+pipeline visuel génératif comme un court prompt, infléchissant la façon dont l'imagerie évolue. Comme la
+caméra AIDA voit aussi ce que la sphère affiche actuellement, les nouveaux visuels qu'elle produit sont
+observés, décrits, et à nouveau distillés en mots-clés au cycle suivant — une boucle fermée où la propre
+sortie de l'installation devient sa propre entrée suivante, indépendamment de (mais en parallèle avec)
+l'influence volumétrique directe des spectateurs sur ce même pipeline génératif.
+</p>
+
+<h2>aida-stream-llm-analysis : fonctionnement interne du pipeline</h2>
+<p>
+Le sous-système d'observation et de rétroaction est un petit ensemble de scripts orchestrant un cycle
+périodique capture → analyse → résumé → diffusion, tous coordonnés via un fichier image partagé et des
+messages OSC.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 460" role="img">
+<title>Fonctionnement interne du pipeline aida-stream-llm-analysis</title>
+<desc>capture_loop_srt.sh rafraîchit une image en arrière-plan. manage_lmstudio.sh assure que le modèle vision-langage est chargé en CPU seul. analyze_latest_frame.py exécute une passe anglaise puis française. summarize_keywords.py réduit le texte anglais en mots-clés. Les trois résultats sont envoyés comme messages OSC séparés. Un processus overnight_monitor.sh séparé journalise indépendamment l'état du GPU, des processus et du disque.</desc>
+<defs><marker id="a3f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">capture_loop_srt.sh</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Rafraîchit un JPEG toutes les ~10s via SRT</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">manage_lmstudio.sh</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Assure le serveur actif, modèle chargé en CPU seul</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">analyze_latest_frame.py</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">Passe anglaise, puis passe française</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">summarize_keywords.py</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Réduit le texte anglais en mots-clés</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a3f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle">Sortie OSC, 3 ports</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">Descriptions et mots-clés vers les visuels</text>
+<text class="note" x="340" y="415" text-anchor="middle">overnight_monitor.sh tourne indépendamment, journalisant GPU, processus,</text>
+<text class="note" x="340" y="433" text-anchor="middle">et disque toutes les 60s pour un fonctionnement de nuit sans surveillance</text>
+</svg>
+<figcaption>Le cycle capture → analyse → résumé → diffusion, plus une surveillance de santé indépendante</figcaption>
+</div>
+
+<h3>Capture — <code>capture_loop_srt.sh</code></h3>
+<p>
+S'exécute en continu en arrière-plan : se connecte au sous-flux SRT de la caméra AIDA
+(<code>srt://&lt;ip_camera&gt;:&lt;port&gt;?streamid=&lt;id&gt;</code>), capture exactement une image avec
+<code>ffmpeg</code>, l'écrit à un chemin fixe (<code>/tmp/latest_frame.jpg</code>), se déconnecte, et attend
+l'intervalle configuré (10 s par défaut) avant de recommencer. Chaque connexion est volontairement de
+courte durée — le côté analyse ne touche jamais la caméra directement, seulement le fichier que ce script
+maintient.
+</p>
+
+<h3>Analyse — <code>analyze_latest_frame.py</code></h3>
+<p>
+Lit l'image actuellement présente à ce chemin, l'encode en base64 dans une requête chat-completions vers
+l'API locale compatible OpenAI de LM Studio, et envoie la réponse du modèle en un seul message OSC. Il n'a
+aucune dépendance caméra — tout ce qui concerne la caméra relève entièrement du script de capture. Détails
+de conception notables :
+</p>
+<ul>
+  <li><code>--skip-if-unchanged</code> compare l'horodatage de modification (mtime) de l'image pour éviter
+  de ré-analyser une image qui n'a pas encore été rafraîchie.</li>
+  <li><code>--quiet</code> n'affiche <em>que</em> la description brute sur stdout (tout le reste va sur
+  stderr), spécifiquement pour qu'un script appelant puisse la capturer proprement via une substitution de
+  commande — utilisé pour transmettre la description anglaise à l'étape de résumé de mots-clés.</li>
+  <li>Un délai d'expiration par défaut généreux (240 s) reflète l'inférence CPU seule sur un modèle
+  vision-langage, bien plus lente que l'inférence GPU.</li>
+</ul>
+
+<h3>Extraction de mots-clés — <code>summarize_keywords.py</code></h3>
+<p>
+Purement texte-entrée/texte-sortie, sans caméra ni image impliquée : prend une description (la sortie
+anglaise ci-dessus), demande au même modèle LM Studio de la réduire à un à trois mots-clés concrets d'objets
+réels — avec instruction explicite d'éviter le langage abstrait ou émotionnel — ajoute un suffixe fixe
+(<code>"fisheye 250 degrees"</code>, nommant la géométrie de l'objectif de la caméra AIDA elle-même) et
+envoie le résultat combiné en OSC. Le suffixe est une chaîne fixe, pas une sortie du modèle, donc il est
+toujours exact quoi que retourne le modèle.
+</p>
+
+<h3>Orchestration — <code>run_pipeline.sh</code></h3>
+<p>Relie tout ce qui précède en un cycle unique qui tourne en continu :</p>
+<ol>
+  <li>Confirme que LM Studio est prêt (via <code>manage_lmstudio.sh</code>) avant de toucher la caméra de
+  quelque façon que ce soit.</li>
+  <li>Démarre la boucle de capture en arrière-plan, en suivant son PID pour un arrêt propre.</li>
+  <li>Boucle indéfiniment : description anglaise → (pause) → description française → (pause) → résumé de
+  mots-clés du texte anglais → (pause) → recommence. Avec le décalage par défaut de 5 s, un cycle complet
+  dure 15 s plus le temps que prennent les deux appels LM Studio eux-mêmes.</li>
+  <li>Sur Ctrl+C, tue le processus de capture en arrière-plan (et tout enfant ffmpeg qu'il a engendré) mais
+  laisse volontairement LM Studio en cours d'exécution, puisque c'est un service local persistant plutôt que
+  quelque chose appartenant à cette exécution du pipeline.</li>
+</ol>
+<p>
+Les prompts anglais et français sont des « humeurs » réglables indépendamment pour la façon dont
+l'installation parle de ce qu'elle voit — le pipeline par défaut utilise un cadrage <em>« humble, eutopique
+et existentialiste »</em>, tandis que la variante allégée d'analyse alternée ci-dessous en utilise un
+<em>« dystopique et nihiliste »</em>, faisant de la posture interprétative de l'installation elle-même un
+paramètre artistique ajustable plutôt qu'un comportement fixe.
+</p>
+
+<h3>Gestion du processus LM Studio — <code>manage_lmstudio.sh</code></h3>
+<p>
+Assure que le serveur d'inférence local est en cours d'exécution et que le modèle vision-langage cible est
+chargé, de façon idempotente (sûr à appeler à chaque exécution). Deux points à noter :
+</p>
+<ul>
+  <li><strong>Épinglage GPU contre inférence CPU seule.</strong> Comme <code>CUDA_VISIBLE_DEVICES</code> ne
+  prend effet qu'au lancement du processus, le script vérifie si LM Studio tourne déjà sur le GPU voulu et
+  le redémarre correctement épinglé sinon — mais le modèle lui-même est ensuite explicitement chargé avec
+  <code>--gpu off</code>. Autrement dit, le <em>processus</em> de LM Studio est maintenu hors des GPU qui
+  font le rendu visuel génératif, tandis que son <em>inférence</em> tourne entièrement sur CPU — un
+  compromis délibéré de latence (l'inférence CPU est bien plus lente) pour garder les deux GPU libres pour
+  le pipeline génératif et le rendu volumétrique, qui comptent davantage pour la sortie visuelle en temps
+  réel de l'installation que le temps de réponse exact de la boucle d'observation.</li>
+  <li>Chaque étape est vérifiée avant d'agir (statut du serveur, liste des modèles via l'API) afin que
+  relancer le script en plein spectacle n'interrompe rien qui fonctionne déjà correctement.</li>
+</ul>
+
+<h3>Variante opérationnelle — <code>run_alternating_analysis.sh</code></h3>
+<p>
+Un mode plus léger : seulement l'alternance anglais/français, à 5 s d'intervalle, sans gestion de la boucle
+de capture ni étape de résumé de mots-clés — utile quand la boucle de capture tourne déjà indépendamment
+(par exemple en développement, ou pour une configuration de performance qui n'a pas besoin du pilotage
+visuel par mots-clés).
+</p>
+
+<h3>Fonctionnement sans surveillance — <code>overnight_monitor.sh</code></h3>
+<p>
+S'exécute indépendamment du pipeline d'analyse, journalisant une ligne toutes les 60 s : utilisation,
+mémoire, température par GPU (signalant tout ce qui atteint ≥ 85 °C, en amont du seuil de limitation
+thermique de la carte), et consommation électrique ; si chaque processus clé (<code>ossia-score</code>,
+<code>Godot_v4</code>, le <code>ffmpeg</code> de capture, et un processus basé sur Node) est toujours vivant ;
+si l'API de LM Studio répond toujours ; et l'espace disque libre (signalant moins de 3 Go libres). Chaque
+ligne est étiquetée <code>ALL-OK</code> ou <code>PROBLEM</code>, de sorte que vérifier une exécution de nuit
+le lendemain matin se résume à un simple <code>grep -c "ALL-OK"</code> ou <code>grep -v "ALL-OK"</code>.
+</p>
+
+<h2>Référence OSC</h2>
+<table>
+  <tr><th>Adresse</th><th>Port</th><th>Envoyé par</th><th>Contenu</th></tr>
+  <tr><td><code>/camera/description</code></td><td>9000</td><td><code>analyze_latest_frame.py</code> (anglais)</td><td>Description de la scène en anglais</td></tr>
+  <tr><td><code>/camera/description</code></td><td>9001</td><td><code>analyze_latest_frame.py</code> (français)</td><td>Description de la scène en français</td></tr>
+  <tr><td><code>/camera/keywords</code></td><td>9002</td><td><code>summarize_keywords.py</code></td><td>1 à 3 mots-clés + suffixe fixe, alimente le pipeline visuel génératif</td></tr>
+</table>
+<p>Les trois sont envoyés au même hôte OSC (la machine exécutant le pipeline visuel génératif / le patch
+Ossia Score), simplement sur des ports différents et, pour les deux descriptions, la même adresse
+distinguée par le port.</p>
+
+<h2>Composants mentionnés mais non détaillés ici</h2>
+<ul>
+  <li><strong>Carto</strong> (moteur Godot) — le programme de capture volumétrique et de reconstruction en
+  nuage de points. Son fonctionnement interne ne fait pas partie de cette analyse (un exécutable compilé a
+  été fourni, pas le code source).</li>
+  <li><strong>Le pipeline visuel génératif</strong> (un patch Ossia Score,
+  <code>diffusion_pipeline.score</code>) — reçoit les messages OSC ci-dessus et pilote l'imagerie Stable
+  Diffusion. Son fonctionnement interne n'a pas non plus été examiné ici ; ce document couvre son rôle et
+  ses entrées, pas son implémentation.</li>
+</ul>
+
+<h2>Ce que cela démontre</h2>
+<p>
+Au-delà du résultat artistique, ce sous-système a demandé une orchestration multi-processus en temps réel
+sur une machine contrainte en GPU (en maintenant délibérément un LLM hors du GPU pour que le rendu et la
+génération ne soient pas privés de ressources), une gestion propre du cycle de vie des processus (capture en
+arrière-plan avec arrêt correct, une vérification idempotente de disponibilité du service sûre à relancer en
+plein spectacle), un pipeline d'inférence multilingue petit mais réel, et des outils de fonctionnement sans
+surveillance (journalisation structurée de l'état de santé) construits spécifiquement pour qu'une exécution
+de nuit puisse être vérifiée en quelques secondes plutôt qu'en lisant des journaux bruts.
+</p>
+
+</body>
+</html>
