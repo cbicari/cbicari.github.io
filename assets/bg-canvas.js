@@ -59,8 +59,8 @@
   var t = 0;
 
   function drawFrame() {
-    tx += (mx - tx) * 0.02;
-    ty += (my - ty) * 0.02;
+    tx += (mx - tx) * 0.004;
+    ty += (my - ty) * 0.004;
 
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = paperColor;
@@ -71,7 +71,7 @@
 
     // Pointer X sets how many times the curve winds around itself, same
     // mapping as the original sketch (~90 to ~155 wraps end to end).
-    var factor = 80 - (tx / Math.max(W, 1)) * 34.5;
+    var factor = 71 - (tx / Math.max(W, 1)) * 17;
     // A slow envelope makes the whole figure expand and contract in place.
     var envelope = 0.72 + 0.28 * Math.sin(t * 0.00026);
     var sizeFactor = W < 500 ? 0.65 : 1;
