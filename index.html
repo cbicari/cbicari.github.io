@@ -74,6 +74,33 @@
     font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-faint);
     margin: 0 0 14px;
   }
+  .term {
+    position: relative; border-bottom: 1px dotted var(--ink-faint);
+    cursor: help;
+  }
+  .term:hover, .term:focus { color: var(--copper-dark); border-bottom-color: var(--copper-dark); outline: none; }
+  .term-tip {
+    position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(4px);
+    width: max-content; max-width: 240px;
+    background: var(--ink); color: var(--paper);
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; line-height: 1.5; font-weight: 400;
+    padding: 10px 12px; border-radius: var(--radius);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 5;
+  }
+  .term-tip::before {
+    content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-bottom-color: var(--ink);
+  }
+  .term:hover .term-tip, .term:focus .term-tip {
+    opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+  }
+  @media (max-width: 500px) {
+    .term-tip { max-width: 200px; left: 0; transform: translateX(0) translateY(4px); }
+    .term-tip::before { left: 20px; transform: none; }
+    .term:hover .term-tip, .term:focus .term-tip { transform: translateX(0) translateY(0); }
+  }
   .hero h1 { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; max-width: 34ch; }
   @media (max-width: 620px) {
     .hero h1 { font-size: clamp(19px, 5.5vw, 25px); }
@@ -145,8 +172,18 @@
 <section class="hero">
   <div class="wrap">
     <p class="byline">
-      <span data-lang="en">Charles Bicari — embedded systems, intermedia &amp; AI</span>
-      <span data-lang="fr" hidden>Charles Bicari — systèmes embarqués, intermédia et IA</span>
+      <span data-lang="en">Charles Bicari —
+        <span class="term" tabindex="0">embedded systems<span class="term-tip">Software running directly on hardware — microcontrollers, sensors, motors — in real time, close to the physical world rather than in a browser or a datacenter.</span></span>,
+        <span class="term" tabindex="0">intermedia<span class="term-tip">Work that lives between mediums — sound, image, movement, circuitry — where the connections themselves are the material, not just the parts.</span></span>
+        &amp;
+        <span class="term" tabindex="0">AI<span class="term-tip">Local and small-scale: on-device inference, tinyML, and creative or generative models — not large cloud-scale systems.</span></span>
+      </span>
+      <span data-lang="fr" hidden>Charles Bicari —
+        <span class="term" tabindex="0">systèmes embarqués<span class="term-tip">Logiciel qui s'exécute directement sur du matériel — microcontrôleurs, capteurs, moteurs — en temps réel, près du monde physique plutôt que dans un navigateur ou un centre de données.</span></span>,
+        <span class="term" tabindex="0">intermédia<span class="term-tip">Un travail qui vit entre les médiums — son, image, mouvement, circuits — où les connexions elles-mêmes sont la matière, pas seulement les pièces.</span></span>
+        et
+        <span class="term" tabindex="0">IA<span class="term-tip">Locale et à petite échelle : inférence sur l'appareil, tinyML, et modèles créatifs ou génératifs — pas de systèmes infonuagiques à grande échelle.</span></span>
+      </span>
     </p>
     <h1>
       <span data-lang="en">The surface, seen from below.<br>Signals, before they arrive.<br>Intentions, drafted into form.</span>
