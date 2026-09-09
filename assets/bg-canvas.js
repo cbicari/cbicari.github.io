@@ -41,7 +41,7 @@
   window.addEventListener('resize', resize);
   resize();
 
-  var mx = W / 2, my = H * 0.4, tx = mx, ty = my;
+  var mx = W * 0.5, my = H * 0.0004, tx = mx, ty = my;
   window.addEventListener('mousemove', function (e) { mx = e.clientX; my = e.clientY; }, { passive: true });
   window.addEventListener('touchmove', function (e) {
     if (e.touches && e.touches[0]) { mx = e.touches[0].clientX; my = e.touches[0].clientY; }
