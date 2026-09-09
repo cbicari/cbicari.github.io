@@ -75,6 +75,9 @@
     margin: 0 0 14px;
   }
   .hero h1 { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; max-width: 34ch; }
+  @media (max-width: 620px) {
+    .hero h1 { font-size: clamp(19px, 5.5vw, 25px); }
+  }
   .hero .sub { margin-top: 18px; max-width: 62ch; color: var(--ink-muted); font-size: 16.5px; }
   .hero .sub strong { color: var(--ink); font-weight: 600; }
   .hero .cta-row { margin-top: 28px; display: flex; gap: 14px; flex-wrap: wrap; }
@@ -153,7 +156,7 @@
       <span data-lang="en">
         Firmware, drivers, and distributed systems that connect physical hardware — motors, cameras,
         sensors, microcontrollers — to networks, machine learning models, and the software that has to
-        control them reliably. Currently designing with <a href="https://sat.qc.ca/fr/lab" target="_blank" rel="noopener">Société des Arts Technologiques' Innovation lab</a>.
+        control them reliably. <br>Currently designing within the <a href="https://sat.qc.ca/fr/lab" target="_blank" rel="noopener">Innovation Lab</a> at <a href="https://sat.qc.ca/" target="_blank" rel="noopener">Société des Arts Technologiques</a>.
       </span>
       <span data-lang="fr" hidden>
         Des firmwares, des pilotes et des systèmes distribués qui relient du matériel physique —
@@ -186,10 +189,10 @@
       <div class="card">
         <h3>Puara — embedded framework</h3>
         <p>
-          <span data-lang="en">Open-source C++ framework for networked ESP32 musical controllers: WiFi,
+          <span data-lang="en">Open-source C++ framework for networked ESP32 controllers: WiFi,
           a browser-based settings server, and gesture recognition, reconfigurable from a browser with no
           reflashing. Used and forked by outside researchers and students.</span>
-          <span data-lang="fr" hidden>Framework C++ open source pour des contrôleurs musicaux ESP32 en
+          <span data-lang="fr" hidden>Framework C++ open source pour des contrôleurs ESP32 en
           réseau : WiFi, serveur de réglages basé sur navigateur et reconnaissance de gestes, reconfigurable
           depuis un navigateur sans reflashage. Utilisé et forké par des chercheurs et étudiants externes.</span>
         </p>
@@ -209,11 +212,11 @@
         </h3>
         <p>
           <span data-lang="en">Closed-loop control firmware for a multi-segment kinetic installation: four
-          independent Teensy 4.1 controllers with encoder feedback, safety interlocks, and crash-safe
+          independent Teensy 4.1 controllers with encoder feedback, safety interlocks, EEPROM management and crash-safe
           recovery.</span>
           <span data-lang="fr" hidden>Firmware de contrôle en boucle fermée pour une installation cinétique à
           segments multiples : quatre contrôleurs Teensy 4.1 indépendants avec rétroaction d'encodeurs,
-          verrouillages de sécurité et récupération après panne.</span>
+          verrouillages de sécurité, gestion d'EEPROM et récupération après panne.</span>
         </p>
         <div class="tag-row">
           <span class="tag">Teensy 4.1</span><span class="tag">OSC</span><span class="tag">real-time control</span>
@@ -231,9 +234,9 @@
         </h3>
         <p>
           <span data-lang="en">Realtime neural audio synthesis (RAVE, via nn~) on a Raspberry Pi 5, with the
-          model's latent space steered live by hand-gesture tracking or a MIDI controller.</span>
+          model's latent space steered live by hand-gesture tracking and/or a MIDI controller.</span>
           <span data-lang="fr" hidden>Synthèse audio neuronale en temps réel (RAVE, via nn~) sur un Raspberry
-          Pi 5, avec l'espace latent du modèle piloté en direct par suivi de gestes ou par contrôleur MIDI.</span>
+          Pi 5, avec l'espace latent du modèle piloté en direct par suivi de gestes et/ou par contrôleur MIDI.</span>
         </p>
         <div class="tag-row">
           <span class="tag">Raspberry Pi 5</span><span class="tag">neural audio</span><span class="tag">OSC</span>
@@ -248,7 +251,7 @@
       <div class="card">
         <h3>
           <span data-lang="en">Improv based modular drum machine</span>
-          <span data-lang="fr" hidden>Vieux Néant — instrument modulaire</span>
+          <span data-lang="fr" hidden>Séquenceur rythmique modulaire dédié à l'improvisation en musiques électroniques</span>
         </h3>
         <p>
           <span data-lang="en">A 20-module Eurorack drum and texture instrument for improvisation-based
@@ -267,7 +270,8 @@
       </div>
 
       <div class="card">
-        <h3>Self-observing volumetric installation</h3>
+          <span data-lang="en">Self-observing volumetric installation</span>
+          <span data-lang="fr" hidden>Installation volumétrique auto-analysante</span>
         <p>
           <span data-lang="en">A real-time installation where a vision-language model watches the piece from
           outside, describes it in English and French, and feeds that description back in to steer the
@@ -279,7 +283,7 @@
           façonne la même image de l'intérieur.</span>
         </p>
         <div class="tag-row">
-          <span class="tag">Vision-language model</span><span class="tag">Stable Diffusion</span><span class="tag">OSC</span>
+          <span class="tag">Vision-language model</span><span class="tag">Stable Diffusion</span><span class="tag">Pointcloud</span>
         </div>
         <div class="doc-link">
           <span data-lang="en"><a href="aida_installation_architecture_en.html">Read the architecture write-up →</a></span>

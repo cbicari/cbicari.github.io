@@ -59,8 +59,8 @@
   var t = 0;
 
   function drawFrame() {
-    tx += (mx - tx) * 0.004;
-    ty += (my - ty) * 0.004;
+    tx += (mx - tx) * 0.0002;
+    ty += (my - ty) * 0.0002;
 
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = paperColor;
