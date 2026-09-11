@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wearable performance power &amp; interconnect harness — system design overview</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 13px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 11px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .callout { background: var(--amber-bg); border: 1px solid var(--amber-border); border-radius: 6px; padding: 14px 18px; margin: 20px 0; font-size: 14.5px; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .callout.teal { background: var(--teal-bg); border-color: var(--teal-border); }
+  .callout.coral { background: var(--coral-bg); border-color: var(--coral-border); }
+
+  .doc-nav { max-width: 880px; margin: 0 auto 8px; padding: 14px 24px 0; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="index.html">← Back to portfolio</a>
+</div>
+
+<h1>Wearable performance power &amp; interconnect harness</h1>
+<p class="subtitle">System design overview — a body-worn power distribution and camera/IMU signal harness built
+for a live performance-arts installation</p>
+<p class="subtitle">Payload: 1× NVIDIA Jetson Orin NX, 2× FRAMOS GMSL3 camera links, 1× Teradek Ranger
+wireless video transmitter, 1× LP-Research CAN IMU. Powered by hot-swappable Li-ion packs.</p>
+
+<h2>Purpose</h2>
+<p>
+A performer wears a compute-and-camera rig through a live show and needs the batteries changed mid-performance
+without the system ever losing power. That single requirement — <em>never dark, even for the second it takes to
+swap a battery</em> — turned out to be the constraint that shaped almost every other decision in this system:
+which battery chemistry, how many cells in parallel, which power-management board, how the fuses are sized,
+and even which connector families were usable at all. This page documents the reasoning trail, not just the
+final bill of materials — the goal is to show how a body-worn power system earns its reliability margin at
+every layer, from cell chemistry up through the physical connector shell.
+</p>
+
+<h2>System overview</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 780 460" role="img">
+<title>System block diagram</title>
+<desc>Two or three hot-swappable battery packs feed a dual-battery power manager, which outputs to a fused distribution block powering the Jetson, two GMSL camera kits, and a wireless video transmitter, while a separate low-current path carries SMBus battery telemetry and CAN bus IMU data.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<rect class="box-teal" x="30" y="20" width="150" height="52" rx="8"/>
+<text class="title" x="105" y="42" text-anchor="middle">Battery pack A</text>
+<text class="subtitle-svg" x="105" y="59" text-anchor="middle">10.8V Li-ion, 3S4P</text>
+
+<rect class="box-teal" x="200" y="20" width="150" height="52" rx="8"/>
+<text class="title" x="275" y="42" text-anchor="middle">Battery pack B</text>
+<text class="subtitle-svg" x="275" y="59" text-anchor="middle">Hot-swap partner</text>
+
+<line class="arrow" x1="105" y1="72" x2="180" y2="106" marker-end="url(#a1)"/>
+<line class="arrow" x1="275" y1="72" x2="200" y2="106" marker-end="url(#a1)"/>
+
+<rect class="box-purple" x="105" y="108" width="180" height="52" rx="8"/>
+<text class="title" x="195" y="130" text-anchor="middle">Dual power manager</text>
+<text class="subtitle-svg" x="195" y="141" text-anchor="middle"><tspan x="195" dy="0">Battery-only output,</tspan><tspan x="195" dy="13">no mains bleed-through</tspan></text>
+
+<line class="arrow" x1="195" y1="160" x2="195" y2="196" marker-end="url(#a1)"/>
+
+<rect class="box-amber" x="65" y="198" width="260" height="52" rx="8"/>
+<text class="title" x="195" y="220" text-anchor="middle">Fused distribution block</text>
+<text class="subtitle-svg" x="195" y="237" text-anchor="middle" style="font-size:7.5px">One fused branch per load, shared ground return</text>
+
+<line class="arrow" x1="140" y1="250" x2="90" y2="286" marker-end="url(#a1)"/>
+<line class="arrow" x1="180" y1="250" x2="180" y2="286" marker-end="url(#a1)"/>
+<line class="arrow" x1="210" y1="250" x2="280" y2="286" marker-end="url(#a1)"/>
+<line class="arrow" x1="250" y1="250" x2="380" y2="286" marker-end="url(#a1)"/>
+
+<rect class="box" x="10" y="288" width="150" height="52" rx="8"/>
+<text class="title" x="85" y="308" text-anchor="middle">Jetson Orin NX</text>
+<text class="subtitle-svg" x="85" y="325" text-anchor="middle">Compute, ~2–3A</text>
+
+<rect class="box" x="115" y="288" width="130" height="52" rx="8"/>
+<text class="title" x="180" y="308" text-anchor="middle">GMSL camera A</text>
+<text class="subtitle-svg" x="180" y="325" text-anchor="middle">Ser + FSM sensor</text>
+
+<rect class="box" x="215" y="288" width="130" height="52" rx="8"/>
+<text class="title" x="280" y="308" text-anchor="middle">GMSL camera B</text>
+<text class="subtitle-svg" x="280" y="325" text-anchor="middle">Ser + FSM sensor</text>
+
+<rect class="box" x="310" y="288" width="150" height="52" rx="8"/>
+<text class="title" x="385" y="308" text-anchor="middle">Teradek Ranger TX</text>
+<text class="subtitle-svg" x="385" y="325" text-anchor="middle">Wireless video, ~19W</text>
+
+<rect class="box-coral" x="560" y="108" width="190" height="52" rx="8"/>
+<text class="title" x="655" y="130" text-anchor="middle">SMBus telemetry</text>
+<text class="subtitle-svg" x="655" y="147" text-anchor="middle">Battery state → Jetson I²C</text>
+<line class="arrow" x1="285" y1="130" x2="558" y2="130" marker-end="url(#a1)"/>
+
+<rect class="box-coral" x="560" y="288" width="190" height="52" rx="8"/>
+<text class="title" x="655" y="308" text-anchor="middle">CAN IMU, 5m run</text>
+<text class="subtitle-svg" x="655" y="325" text-anchor="middle" style="font-size:10.6px">Differential pair, 2× 120Ω termination</text>
+
+<line class="arrow" x1="85" y1="340" x2="85" y2="380" marker-end="url(#a1)"/>
+<rect class="box-amber" x="230" y="382" width="300" height="52" rx="8"/>
+<text class="title" x="380" y="404" text-anchor="middle">Body-worn enclosure</text>
+<text class="subtitle-svg" x="380" y="421" text-anchor="middle">IP-rated connectors throughout, sweat/motion-rated</text>
+<line class="arrow" x1="345" y1="340" x2="345" y2="380" marker-end="url(#a1)"/>
+<line class="arrow" x1="655" y1="340" x2="450" y2="382" marker-end="url(#a1)"/>
+</svg>
+<figcaption>Power flows through one hot-swappable path; telemetry and IMU data run on two independent, lower-current buses</figcaption>
+</div>
+
+<h2>Power architecture: why hot-swap drives the cell topology</h2>
+<p>
+The requirement that the system never lose power during a battery change rules out a single-battery design
+outright — there is no way to physically remove and replace one battery without a gap unless something else
+is carrying the load in the meantime. The solution is a <strong>dual (or triple) battery bay with a battery
+management board that combines them electrically</strong>, so that pulling one pack still leaves the other(s)
+carrying full system current with zero interruption.
+</p>
+<p>
+That single requirement cascades into a chain of smaller decisions:
+</p>
+<ul>
+  <li><strong>Nominal voltage, 10.8V (3S Li-ion):</strong> the camera SerDes deserializer's confirmed operating
+  window is 9.6–13.3V. A 3S pack's native range (~8.25–12.6V) sits almost entirely inside that window, which
+  means the system can run with <em>no active buck/boost converter in the main power path</em> — just wiring
+  and fusing. A 4S (14.4V) pack would overshoot the 13.3V ceiling at full charge and require a converter
+  anyway, reintroducing conversion heat on a device worn against skin.</li>
+  <li><strong>Cell configuration, more parallel strings over fewer:</strong> for a fixed system current draw,
+  more parallel strings (higher "P" in an "S×P" pack spec) means a lower discharge rate per individual cell —
+  less heat, better cycle life, and — critically for hot-swap — more margin during the moment a single pack
+  has to carry the <em>entire</em> system alone.</li>
+  <li><strong>Battery-only power path:</strong> the chosen power-management board's output is sourced
+  exclusively from the batteries, never from its charging input — so pre-show charging on mains and live
+  performance on batteries can never accidentally cross paths and put an unregulated charging voltage onto
+  the load bus.</li>
+</ul>
+
+<div class="callout teal">
+<strong>Margin philosophy, applied consistently</strong>
+Every current-carrying decision in this system was sized the same way: identify the real worst case, then
+size the component so normal operation sits comfortably below its rated limit — not at the edge of it. That
+discipline shows up at every scale in this build, from cell-level C-rate down to a single fuse value.
+</div>
+
+<h2>Fusing and distribution</h2>
+<p>
+The power-management board's output is unfused by design — protection is added downstream, once the single
+supply rail splits into individual branches. Each branch gets its own fuse, sized independently:
+</p>
+<table>
+  <tr><th>Branch</th><th>Real / worst-case draw</th><th>Fuse</th><th>Why</th></tr>
+  <tr><td>Jetson Orin NX</td><td>~2.2–3A (up to max power mode)</td><td>5A</td><td>~65–100% headroom above worst case — a fuse sized right at the operating edge nuisance-trips during normal use</td></tr>
+  <tr><td>Teradek Ranger TX</td><td>~2A nominal</td><td>5A</td><td>Same margin logic; wireless transmitters can burst above their quoted average</td></tr>
+  <tr><td>GMSL camera A</td><td>~0.2A real, 1A budgeted</td><td>2A</td><td>Fuse respects the deliberate budget margin rather than the tighter real-world number</td></tr>
+  <tr><td>GMSL camera B</td><td>~0.2A real, 1A budgeted</td><td>2A</td><td>Same</td></tr>
+</table>
+<p>
+The shared ground return gets a wire gauge sized differently from any single branch: because it carries the
+<em>combined</em> return current of every branch simultaneously, it needs to be rated for the sum of all
+branches, not any one branch alone — a detail that's easy to miss if "ground" is treated as an
+afterthought rather than a conductor doing real work.
+</p>
+
+<div class="callout">
+<strong>Protective earth vs. functional ground</strong>
+A 9-position connector considered for this harness offered a PE (protective earth) pin alongside the power
+pins. In a mains-referenced system, PE bonds an exposed enclosure to true earth so a fault has somewhere
+harmless to go. This system is a fully isolated, floating battery supply with no mains reference anywhere —
+so PE has nothing to bond to, and was deliberately left unterminated rather than tied to the functional
+ground return, keeping the two paths permanently separate.
+</div>
+
+<h2>Connector engineering: where the real depth lives</h2>
+<p>
+This is the part of a wearable hardware build that rarely gets documented, and it's where most of the actual
+engineering time went. A body-worn harness has to route power and several distinct signal types (I²C/SMBus
+telemetry, CAN bus, MIPI camera data, USB) through a small number of sealed panel connectors — and getting a
+connector "roughly right" is not the same as getting it right. Several real mismatches were caught in this
+build before they reached hardware:
+</p>
+<table>
+  <tr><th>What looked right at first</th><th>What was actually wrong</th><th>How it was caught</th></tr>
+  <tr><td>A connector's "female"/"male" label</td><td>Shell gender and contact gender are independent axes — a "female connector" can carry male pins</td><td>Cross-checked the full spec string, not just the summary label</td></tr>
+  <tr><td>Two similar-looking connector families, same position count</td><td>One was a genuine wire-splice product; a near-identical part number was actually a cable-shield-to-ground terminator — wrong physical function entirely</td><td>Verified the manufacturer's own product-family name, not the distributor's generic category tag</td></tr>
+  <tr><td>A small industrial connector rated for the job</td><td>Its per-pin current rating (common on compact sensor connectors) sat below the system's real worst-case draw</td><td>Checked pin-level current rating against the fused branch rating, not just overall connector rating</td></tr>
+  <tr><td>A crimp tool recommended for a similar-size connector pin</td><td>Tool <em>frame</em> compatibility and <em>contact-geometry</em> compatibility are separate specs — a correct frame with the wrong die still produces an unreliable crimp</td><td>Verified against the connector manufacturer's own tool cross-reference before ordering</td></tr>
+</table>
+<p>
+None of these were exotic failures — they're the ordinary, easy-to-miss traps in any harness build that mixes
+several connector families. The discipline that avoided them was simple and repeated dozens of times over the
+build: read the actual manufacturer datasheet for both halves of a mating pair before ordering either one,
+rather than trusting a part number's resemblance to something already confirmed.
+</p>
+
+<h2>Signal integrity: choosing the right bus for the run length</h2>
+<p>
+The harness carries two distinct low-current signal types alongside the power distribution, and each was
+matched to a bus protocol suited to its actual physical run:
+</p>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 220" role="img">
+<title>Signal bus comparison</title>
+<desc>SMBus telemetry runs a short distance inside the enclosure and uses I2C, while the IMU's CAN bus link runs a full five meters and uses differential signaling with termination resistors at both ends.</desc>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box-coral" x="20" y="20" width="290" height="60" rx="8"/>
+<text class="title" x="165" y="44" text-anchor="middle">SMBus (I²C) — battery telemetry</text>
+<text class="subtitle-svg" x="165" y="62" text-anchor="middle">Short, in-enclosure run · single-ended</text>
+<rect class="box-teal" x="370" y="20" width="290" height="60" rx="8"/>
+<text class="title" x="515" y="44" text-anchor="middle">CAN bus — IMU link</text>
+<text class="subtitle-svg" x="515" y="62" text-anchor="middle">5 m run · differential, twisted pair</text>
+<text class="note" x="165" y="110" text-anchor="middle">I²C has no differential noise rejection and is not</text>
+<text class="note" x="165" y="126" text-anchor="middle">rated for multi-meter runs without a bus extender</text>
+<text class="note" x="515" y="110" text-anchor="middle">CAN is rated to ~40 m at its max bit rate —</text>
+<text class="note" x="515" y="126" text-anchor="middle">5 m is deep inside spec once properly terminated</text>
+<line class="arrow" x1="165" y1="80" x2="165" y2="98" marker-end="url(#a2)"/>
+<line class="arrow" x1="515" y1="80" x2="515" y2="98" marker-end="url(#a2)"/>
+<rect class="box-amber" x="120" y="150" width="440" height="52" rx="8"/>
+<text class="title" x="340" y="172" text-anchor="middle" style="font-size:11.9px">Same enclosure, two protocols, matched to two different physical realities</text>
+<text class="subtitle-svg" x="340" y="189" text-anchor="middle">Choosing the bus for the run, not the run for a default bus</text>
+</svg>
+<figcaption>Two signal buses in one harness, each selected for the length it actually has to cover</figcaption>
+</div>
+<p>
+Keeping the IMU on CAN rather than a more common short-range bus turned out to be validating in hindsight:
+CAN's differential signaling is specifically designed to reject noise over real cable distances, which matters
+in a harness that routes this signal alongside battery power lines and camera data. The two things that
+actually determine whether 5 meters of CAN works reliably have nothing to do with distance capability itself
+— they're implementation details:
+</p>
+<ul>
+  <li><strong>Termination:</strong> exactly two 120Ω resistors, one at each physical end of the bus — missing
+  or duplicate termination is the most common real-world cause of CAN bus problems, far more than raw cable
+  length.</li>
+  <li><strong>Twisted pair for the differential signal:</strong> a generic 4-conductor cordset with parallel,
+  untwisted conductors gives up most of CAN's noise immunity even though the protocol itself would tolerate
+  the distance — the cable construction has to match the protocol's assumptions, not just the connector.</li>
+</ul>
+
+<h2>Tooling: the crimp is only as good as the die that made it</h2>
+<p>
+A connector's electrical spec is only half the story — the crimp joining wire to contact has its own
+tolerance stack, and using the wrong tool on the right connector produces a joint that looks fine and fails
+later. This build used six distinct small-pitch connector families (JST VH, Molex Micro-Lock Plus, Molex
+KK254, Molex Mini-Fit Jr, Molex SL, and an aerospace-grade Amphenol M23 series), each requiring its own
+verified crimp tool or die:
+</p>
+<table>
+  <tr><th>Connector family</th><th>Manufacturer's own tool</th><th>Approach taken</th></tr>
+  <tr><td>JST VH (battery interconnects)</td><td>~$900+ dedicated tool</td><td>Verified generic multi-pitch ratchet crimper against the manufacturer's own AWG range</td></tr>
+  <tr><td>Amphenol M23 aerospace-grade (enclosure connectors)</td><td>$2,300+ full production tool</td><td>Sourced the same tool frame generically (it's a rebadged MIL-spec Daniels tool), then confirmed the correct positioner against the connector maker's own contact part numbers</td></tr>
+  <tr><td>Molex Mini-Fit Jr (power distribution)</td><td>~$660 premium-grade tool</td><td>Found the manufacturer's own lower "service grade" tool at a fraction of the price — same brand, same guarantee, correctly scoped for prototype volume</td></tr>
+  <tr><td>JST VH, smaller pin variant</td><td>~$500–1,200 dedicated tool</td><td>Found a real, tested community report confirming a specific affordable interchangeable-die tool for this exact contact — and equally, confirmed via the same source that it does <em>not</em> work on the connector's larger sibling contact</td></tr>
+</table>
+<p>
+The recurring lesson: a "compatible tool" claim is only as good as whether it names the <em>exact</em> contact
+part number, not just the connector family or pitch. Two contacts can share a pitch and still need different
+dies — this build hit that boundary more than once, and every time, checking before ordering was cheaper than
+finding out after a bad crimp failed in the field.
+</p>
+
+<h2>Design principles, in summary</h2>
+<ul>
+  <li><strong>Let the hardest constraint set the architecture.</strong> Uninterrupted hot-swap wasn't a nice-to-have bolted on later — it determined the battery topology, the power-management board's feature set, and the fusing plan from the start.</li>
+  <li><strong>Size for the real worst case, with margin, not the average case.</strong> Every fuse, wire gauge, and connector current rating in this system was checked against the system's actual worst-case draw, not its typical draw — and re-checked when a "typical" number turned out to have more headroom than first assumed.</li>
+  <li><strong>Match the signal path to the physical run, not the other way around.</strong> A 5-meter cable run picked its own bus protocol; the protocol wasn't chosen first and the distance squeezed to fit it.</li>
+  <li><strong>Verify both halves of every mating pair against the manufacturer's own documentation before ordering either one.</strong> Nearly every real mistake avoided in this build came from this single habit, applied without exception.</li>
+</ul>
+
+</body>
+</html>

@@ -477,13 +477,6 @@
           </div>
         </div>
 
-      </div>
-    </div>
-
-    <div class="pillar">
-      <div class="pillar-label"><span data-lang="en">Embedded &amp; edge AI</span><span data-lang="fr" hidden>IA embarquée et en périphérie</span></div>
-      <div class="card-grid">
-
         <div class="card">
           <h3>snake_differ — on-device motion detection</h3>
           <div class="bp-panel">
@@ -522,6 +515,13 @@
             <span data-lang="fr" hidden>Firmware privé — disponible sur demande. <a href="snake_differ_architecture_fr.html">Lire la note d'architecture →</a></span>
           </div>
         </div>
+
+      </div>
+    </div>
+
+    <div class="pillar">
+      <div class="pillar-label"><span data-lang="en">Embedded &amp; edge AI</span><span data-lang="fr" hidden>IA embarquée et en périphérie</span></div>
+      <div class="card-grid">
 
         <div class="card">
           <h3>Realtime latent-space synthesis</h3>
@@ -832,6 +832,40 @@
           <div class="private-note">
             <span data-lang="en">Documented system. <a href="vieux_neant_architecture_en.html">Read the full architecture write-up →</a></span>
             <span data-lang="fr" hidden>Système documenté. <a href="vieux_neant_architecture_fr.html">Lire la note d'architecture complète →</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Wearable performance power &amp; interconnect harness</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: a hot-swappable Li-ion battery pair feeds a fused per-branch distribution block, which powers the Jetson, two GMSL cameras, and a wireless video transmitter without ever losing power during a battery change.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Hot-swap Li-ion pair</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">10.8V, battery-only power path</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Fused distribution, per branch</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">sized to real worst-case draw</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">Jetson · 2× GMSL camera · Teradek TX</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">never interrupted mid-swap</text>
+            </svg>
+          </div>
+          <p>Body-worn power and signal harness for a live-performance rig: battery topology and fusing driven
+          by an uninterrupted hot-swap requirement, CAN bus selected over I²C for a 5-meter IMU run, and a
+          verification-first process for connector and crimp-tool sourcing across six distinct pin families —
+          documented as a full design-reasoning write-up, not just a parts list.</p>
+          <div class="tag-row">
+            <span class="tag">Power electronics</span><span class="tag">Li-ion battery systems</span>
+            <span class="tag">Connector engineering</span><span class="tag">CAN bus</span>
+            <span class="tag">IP-rated hardware</span>
+          </div>
+          <div class="repo-link">
+            <a href="wearable_power_harness.html">full design write-up →</a>
           </div>
         </div>
 
