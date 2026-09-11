@@ -306,7 +306,7 @@
         <div class="tag-row">
           <span class="tag">OSC</span><span class="tag">BLE advertising</span>
           <span class="tag">WiFi STA/AP</span><span class="tag">UDP</span>
-          <span class="tag">SLIP serial</span><span class="tag">mDNS</span>
+          <span class="tag">SLIP serial</span><span class="tag">mDNS</span><span class="tag">Ethernet/PoE</span>
         </div>
       </div>
       <div class="skill-group">
@@ -434,6 +434,46 @@
           <div class="private-note">
             <span data-lang="en">Private firmware — available on request. <a href="pendulum_architecture_en.html">Read the architecture write-up →</a></span>
             <span data-lang="fr" hidden>Firmware privé — disponible sur demande. <a href="pendulum_architecture_fr.html">Lire la note d'architecture →</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Antenne — PoE motion sensor</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: a MOD-MPU9150 9DoF sensor feeds ESP32-PoE firmware, which fuses orientation and streams it as an OSC bundle over PoE Ethernet.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">MOD-MPU9150 sensor</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">9DoF over I2C, UEXT</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">ESP32-PoE firmware</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">9-axis Kalman fusion</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">OSC bundle, PoE Ethernet</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">50 Hz to receiving software</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Self-contained 9DoF motion sensor: an MPU9150 module plugs directly into an
+            ESP32-PoE board, which fuses orientation with a 9-axis Kalman filter and streams it as OSC over a
+            single PoE Ethernet cable — no separate power supply. Magnetometer calibration persists to flash
+            and can be triggered locally or remotely.</span>
+            <span data-lang="fr" hidden>Capteur de mouvement 9DoF autonome : un module MPU9150 se branche
+            directement dans une carte ESP32-PoE, qui fusionne l'orientation par filtre de Kalman 9 axes et la
+            diffuse en OSC via un seul câble Ethernet PoE — sans alimentation séparée. Le calibrage du
+            magnétomètre est conservé en flash et peut être déclenché localement ou à distance.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">ESP32-PoE</span><span class="tag">OSC</span>
+            <span class="tag">Ethernet/PoE</span><span class="tag">Kalman fusion</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Private firmware — available on request. <a href="antenne_architecture_en.html">Read the architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Firmware privé — disponible sur demande. <a href="antenne_architecture_fr.html">Lire la note d'architecture →</a></span>
           </div>
         </div>
 

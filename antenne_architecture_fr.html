@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antenne — Vue d'ensemble de l'architecture</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  .cycle-note { font-size: 12px; fill: var(--muted); font-style: italic; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="index.html">← Retour au portfolio</a>
+  <a href="antenne_architecture_en.html">English</a>
+</div>
+
+<h1>Antenne</h1>
+<p class="subtitle">Vue d'ensemble de l'architecture — capteur de mouvement 9DoF vers OSC via Ethernet</p>
+
+<h2>Objectif</h2>
+<p>
+Une « antenne » de capteur de mouvement autonome : branchez le module MPU9150 directement dans le
+connecteur UEXT de l'ESP32-PoE, alimentez la carte via un seul câble Ethernet (PoE — pas d'alimentation
+séparée), et elle diffuse les données d'accéléromètre, de gyroscope, de magnétomètre et d'orientation
+fusionnée en OSC vers n'importe quel logiciel récepteur (Max/MSP, Pure Data, TouchDesigner, etc.) à 50 Hz.
+Le calibrage du gyroscope s'exécute automatiquement au démarrage, et un calibrage du magnétomètre (ponctuel
+ou au besoin) — déclenché par un appui bouton ou un message OSC distant — est conservé en mémoire flash
+afin de survivre aux redémarrages.
+</p>
+
+<h2>Matériel</h2>
+<table>
+  <tr><th>Pièce</th><th>Référence</th></tr>
+  <tr><td>Carte MCU</td><td>Olimex ESP32-PoE (16 Mo de flash)</td></tr>
+  <tr><td>Capteur de mouvement</td><td>Olimex MOD-MPU9150 (accéléromètre/gyroscope MPU-6050 + magnétomètre AK8975, dans un seul boîtier)</td></tr>
+  <tr><td>Connexion</td><td>Connecteur UEXT — se branche directement, sans câblage</td></tr>
+  <tr><td>Réseau</td><td>Ethernet RJ45, alimenté par PoE</td></tr>
+  <tr><td>Broches I2C (UEXT)</td><td>SDA = GPIO13, SCL = GPIO16</td></tr>
+  <tr><td>LED intégrée</td><td>GPIO33, actif à l'état haut</td></tr>
+  <tr><td>BTN1</td><td>GPIO34, actif à l'état bas, pull-up externe</td></tr>
+</table>
+
+<h2>Vue d'ensemble du système</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 380" role="img">
+<title>Vue d'ensemble du système Antenne</title>
+<desc>Un capteur de mouvement 9DoF MOD-MPU9150 se connecte via I2C au firmware Olimex ESP32-PoE, qui fusionne l'orientation et diffuse un paquet OSC via Ethernet PoE vers un logiciel récepteur à 50 Hz. L'OSC entrant peut déclencher un calibrage du magnétomètre sur la carte.</desc>
+<defs><marker id="a1f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">MOD-MPU9150 (UEXT, I2C)</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Accéléromètre,</tspan><tspan x="340" dy="13">gyroscope, magnétomètre</tspan></text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle" style="font-size:13.4px">Firmware Olimex ESP32-PoE</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:11.2px">Lit les capteurs, fusionne l'orientation</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a1f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle" style="font-size:11.3px">Paquet OSC sortant, Ethernet PoE</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">50 Hz vers DEST_IP:DEST_PORT</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a1f)"/>
+<rect class="box-amber" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Logiciel récepteur</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:10.7px">Max/MSP, Pure Data, TouchDesigner...</text>
+<text class="note" x="340" y="345" text-anchor="middle">L'OSC entrant sur le port 8888 (/mpu/calibrate) peut déclencher</text>
+<text class="note" x="340" y="363" text-anchor="middle">une session de calibrage du magnétomètre sur la carte à tout moment</text>
+</svg>
+<figcaption>Capteur → firmware → OSC via Ethernet → logiciel récepteur</figcaption>
+</div>
+<p>L'OSC entrant sur le port 8888 (<code>/mpu/calibrate</code>) peut déclencher une session de calibrage du
+magnétomètre sur la carte à tout moment, indépendamment du flux de données sortant.</p>
+
+<h2>Boucle principale du firmware</h2>
+<p>La carte exécute une boucle à fréquence fixe de 50 Hz (<code>LOOP_MS = 20</code>) :</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Boucle principale du firmware Antenne</title>
+<desc>Après le calibrage au démarrage et le chargement de tout biais de magnétomètre sauvegardé, le firmware lit le MPU9150 et l'AK8975 via I2C, applique le biais du magnétomètre et exécute une fusion Kalman 9 axes, envoie le paquet OSC résultant via Ethernet, puis met à jour la LED et vérifie le bouton et l'OSC entrant avant de répéter toute la boucle toutes les 20 millisecondes.</desc>
+<defs><marker id="a2f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle" style="font-size:7.9px">Démarrage : Ethernet, biais mag., calibrage gyro</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">Calibrage immobile d'1 seconde</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle" style="font-size:12.4px">Lire MPU9150 + AK8975 via I2C</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Accel, gyro, magnétomètre brut</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle" style="font-size:9.0px">Correction de biais + fusion Kalman 9 axes</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle" style="font-size:8.2px">puara-gestures — roulis, tangage, lacet compensé</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle" style="font-size:10.8px">Envoyer le paquet OSC via Ethernet</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:9.5px">Accel, gyro, mag, angles d'Euler, inclinaison</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle" style="font-size:7.6px">Mettre à jour la LED, vérifier BTN1 et l'OSC entrant</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:9.9px">Peut déclencher une session de calibrage</text>
+<text class="cycle-note" x="340" y="415" text-anchor="middle">↻ se répète toutes les 20 ms (boucle à 50 Hz)</text>
+</svg>
+<figcaption>La boucle principale à fréquence fixe, de la lecture capteur à l'envoi OSC</figcaption>
+</div>
+
+<ol>
+  <li><strong>Démarrage</strong> — établit la liaison Ethernet (IP statique, jusqu'à 8 s d'attente), charge
+  tout biais de magnétomètre précédemment sauvegardé depuis la flash (NVS), initialise le MPU9150 via I2C,
+  et exécute un calibrage de biais du gyroscope d'1 seconde (200 échantillons, le capteur devant rester
+  immobile).</li>
+  <li><strong>Lecture des capteurs</strong> — une rafale de lecture I2C de 14 octets couvre ensemble les
+  registres de l'accéléromètre et du gyroscope ; le magnétomètre est lu séparément (via le mode bypass I2C
+  du MPU9150 donnant un accès direct à l'AK8975 intégré) chaque fois que son bit de données prêtes est
+  activé.</li>
+  <li><strong>Fusion d'orientation</strong> — si un calibrage du magnétomètre a été effectué, le biais
+  correspondant par axe est soustrait avant que le vecteur soit normalisé à une longueur unitaire. Le
+  résultat alimente un filtre de Kalman 9 axes (issu de <code>puara-gestures</code>) qui fusionne
+  accéléromètre, gyroscope et magnétomètre en roulis, tangage, et lacet compensé en inclinaison.</li>
+  <li><strong>Envoi OSC</strong> — un paquet par itération de boucle, conditionné à ce que la liaison
+  Ethernet soit active.</li>
+  <li><strong>Gestion LED / entrées</strong> — la machine à états de la LED et le détecteur d'appui long de
+  BTN1 s'exécutent à chaque cycle, et toute demande de calibrage OSC entrante est également traitée ici.</li>
+</ol>
+
+<h2>Calibrage du magnétomètre</h2>
+<p>
+Les interférences ferromagnétiques (métal à proximité, haut-parleurs, alimentations) décalent le point zéro
+du magnétomètre, ce qui fausse le lacet. Le calibrage supprime ce décalage constant — nécessaire une fois
+lors de la première installation, et à nouveau chaque fois que la configuration physique de l'instrument
+change.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Séquence de calibrage du magnétomètre Antenne</title>
+<desc>Le calibrage est déclenché soit en maintenant un bouton pendant 5 secondes, soit par un message OSC entrant. Une fenêtre de 30 secondes suit alors la lecture minimale et maximale du magnétomètre sur chaque axe pendant que le capteur est tourné dans toutes les orientations. Le point médian du min et du max de chaque axe devient le biais ferromagnétique, sauvegardé en flash et chargé automatiquement à chaque démarrage futur.</desc>
+<defs><marker id="a3f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Déclencher le calibrage</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Maintenir BTN1 5s, ou</tspan><tspan x="340" dy="13">envoyer l'OSC /mpu/calibrate</tspan></text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3f)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">Fenêtre de rotation de 30s</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:7.8px">LED clignotement rapide (4 Hz), suit min/max par axe</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3f)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle" style="font-size:11.7px">Calculer le biais ferromagnétique</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">biais = (min + max) / 2, par axe</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3f)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Sauvegarder en flash (NVS)</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">LED fixe pendant 1s confirme la fin</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a3f)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle" style="font-size:7.3px">Chargé automatiquement à chaque démarrage futur</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:8.9px">Survit aux coupures de courant et mises à jour</text>
+</svg>
+<figcaption>Séquence de calibrage, du déclenchement au biais persisté</figcaption>
+</div>
+
+<p>
+Le calibrage peut être démarré de deux façons — en maintenant le bouton physique, ou en envoyant un message
+OSC depuis le même réseau vers lequel la carte diffuse — afin de pouvoir être déclenché soit directement sur
+l'instrument, soit à distance depuis le logiciel qui reçoit déjà ses données. Pendant la fenêtre de 30
+secondes, faire tourner le capteur à travers toutes les orientations (un mouvement en huit couvrant tous les
+axes fonctionne bien) permet au firmware d'enregistrer le minimum et le maximum réels sur chaque axe du
+magnétomètre ; le point médian du min/max de chaque axe devient le biais de cet axe. Le résultat est écrit
+en mémoire non volatile et survit aux coupures de courant et aux reflashages du firmware.
+</p>
+
+<h2>États de la LED</h2>
+<table>
+  <tr><th>Comportement LED</th><th>Signification</th></tr>
+  <tr><td>Éteinte</td><td>Pas de liaison Ethernet</td></tr>
+  <tr><td>Clignotement lent (1 Hz)</td><td>Connectée et en diffusion</td></tr>
+  <tr><td>Fixe (allumée)</td><td>BTN1 est maintenu enfoncé — continuer à maintenir pour démarrer le calibrage</td></tr>
+  <tr><td>Clignotement rapide (4 Hz)</td><td>Calibrage du magnétomètre en cours</td></tr>
+  <tr><td>Fixe pendant 1 seconde</td><td>Calibrage venant de se terminer avec succès</td></tr>
+</table>
+
+<h2>Référence OSC</h2>
+<h3>Sortant (carte → ordinateur), un paquet toutes les 20 ms</h3>
+<table>
+  <tr><th>Adresse</th><th>Type</th><th>Unité</th><th>Description</th></tr>
+  <tr><td><code>/mpu/accel/x</code> <code>/mpu/accel/y</code> <code>/mpu/accel/z</code></td><td>float</td><td>g</td><td>Accéléromètre brut</td></tr>
+  <tr><td><code>/mpu/gyro/x</code> <code>/mpu/gyro/y</code> <code>/mpu/gyro/z</code></td><td>float</td><td>°/s</td><td>Gyroscope, corrigé du biais</td></tr>
+  <tr><td><code>/mpu/mag/x</code> <code>/mpu/mag/y</code> <code>/mpu/mag/z</code></td><td>float</td><td>sphère unitaire</td><td>Magnétomètre, normalisé ; décalé avant calibrage, centré sur l'origine après</td></tr>
+  <tr><td><code>/mpu/euler/roll</code></td><td>float</td><td>° (0–360)</td><td>Rotation autour de X</td></tr>
+  <tr><td><code>/mpu/euler/pitch</code></td><td>float</td><td>° (−90–+90)</td><td>Rotation autour de Y</td></tr>
+  <tr><td><code>/mpu/euler/yaw</code></td><td>float</td><td>° (0–360)</td><td>Cap, compensé en inclinaison</td></tr>
+  <tr><td><code>/mpu/tilt</code></td><td>float</td><td>° (0–180)</td><td>Magnitude d'inclinaison combinée, <code>sqrt(roll² + pitch²)</code>, plafonnée</td></tr>
+  <tr><td><code>/mpu/btn1</code></td><td>int</td><td>—</td><td>1 tant que BTN1 est maintenu, sinon 0</td></tr>
+  <tr><td><code>/mpu/cal/status</code></td><td>int</td><td>—</td><td>0 = non calibré, 1 = calibrage en cours, 2 = calibré</td></tr>
+</table>
+
+<h3>Entrant (ordinateur → carte), port 8888</h3>
+<table>
+  <tr><th>Adresse</th><th>Arguments</th><th>Description</th></tr>
+  <tr><td><code>/mpu/calibrate</code></td><td><em>(aucun)</em></td><td>Démarre une session de calibrage du magnétomètre de 30 secondes</td></tr>
+</table>
+
+<h2>Paramètres ajustables</h2>
+<table>
+  <tr><th>Paramètre</th><th>Emplacement</th><th>Défaut</th><th>Effet</th></tr>
+  <tr><td>Fréquence d'envoi</td><td><code>LOOP_MS</code></td><td><code>20</code> (50 Hz)</td><td>Plus bas = mises à jour plus rapides ; ne pas descendre sous <code>10</code> (100 Hz)</td></tr>
+  <tr><td>Bruit de processus Kalman (Q)</td><td><code>kalman(Q, R)</code></td><td><code>0,001</code></td><td>À quel point le filtre fait confiance à l'intégration du gyroscope ; plus bas = plus lisse mais plus lent à réagir</td></tr>
+  <tr><td>Bruit de mesure Kalman (R)</td><td><code>kalman(Q, R)</code></td><td><code>0,01</code></td><td>À quel point le filtre fait confiance aux corrections accéléromètre/magnétomètre ; plus haut = plus lisse mais dérive davantage en cas de perturbation</td></tr>
+  <tr><td>Bande passante DLPF du gyroscope</td><td>Écriture registre <code>R_CONFIG</code></td><td><code>0x04</code> (~21 Hz)</td><td><code>0x02</code>=98 Hz (mouvement rapide) … <code>0x05</code>=10 Hz (quasi statique) ; le réglage actuel convient aux mouvements lents et délibérés</td></tr>
+</table>
+
+<h2>Structure du projet</h2>
+<pre><code>├── boards/
+│   └── esp32-poe-16mb.json     définition de carte PlatformIO personnalisée
+├── examples/
+│   ├── ESP32_PoE_Ethernet_SD_Card_Arduino.ino
+│   ├── ESP32_PoE_WebServer_Demo.ino
+│   └── MagnetometreCalibrationDemo.cpp
+├── mpu9150_demo/                démo brute originale du capteur
+├── src/
+│   └── main.cpp                 firmware (à modifier)
+└── platformio.ini</code></pre>
+<p>
+Les dossiers <code>examples/</code> et <code>mpu9150_demo/</code> sont du matériel de référence inclus, ne
+faisant pas partie du firmware réellement exécuté — chacun provient d'une origine différente et est
+conservé pour référence plutôt qu'exécuté :
+</p>
+<ul>
+  <li><strong><code>mpu9150_demo.ino</code></strong> — la démo originale des registres I2C bruts du
+  MPU-9150 (domaine public, par l'utilisateur Arduino « frtrobotik » / Tobias Hübner, édition Olimexino par
+  Chris B.) dont dérive la logique des registres de capteur de ce projet.</li>
+  <li><strong><code>MagnetometreCalibrationDemo.cpp</code></strong> — un exemple de référence de calibrage
+  du magnétomètre issu d'un autre projet de l'IDMIL (GuitarAMI, Edu Meneses, construit sur les modèles
+  Puara), conservé ici comme point de comparaison pour l'expérience de calibrage sur une pile IMU plus
+  complète (LSM9DS1/BNO080).</li>
+  <li><strong><code>ESP32_PoE_WebServer_Demo.ino</code></strong> — une démo de serveur web générique pour la
+  carte Olimex ESP32-PoE (contrôle divers modules UEXT Olimex), originellement par David Bird, adaptée pour
+  cette carte — sans rapport avec le MPU9150 mais utile comme référence de périphériques ESP32-PoE.</li>
+  <li><strong><code>ESP32_PoE_Ethernet_SD_Card_Arduino.ino</code></strong> — une démo combinée de mise en
+  route carte SD + Ethernet pour la même carte.</li>
+</ul>
+
+<h2>Définition de carte PlatformIO personnalisée</h2>
+<p>
+<code>boards/esp32-poe-16mb.json</code> définit la variante 16 Mo de flash de l'Olimex ESP32-PoE pour
+PlatformIO, puisqu'elle ne fait pas partie des cartes intégrées par défaut : table de partitions et script
+de l'éditeur de liens corrects pour 16 Mo de flash, câblage du PHY Ethernet spécifique à cette carte (LAN8720
+via RMII, broches MDC/MDIO, broche d'alimentation, mode d'horloge), et paramètres de téléversement
+(921 600 bauds, esptool/espota).
+</p>
+
+<h2>Dépendances</h2>
+<p>Gérées automatiquement par PlatformIO :</p>
+<ul>
+  <li><a href="https://github.com/CNMAT/OSC">CNMAT OSC</a> — bibliothèque de messages/paquets OSC</li>
+  <li><a href="https://github.com/Puara/puara-gestures">puara-gestures</a> — filtre de Kalman 9 axes pour l'orientation</li>
+  <li>Framework Arduino ESP32 (Espressif32, via PlatformIO)</li>
+</ul>
+
+</body>
+</html>

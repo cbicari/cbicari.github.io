@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antenne — Architecture overview</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1f2328; --muted: #57606a; --border: #d0d7de; --code-bg: #f6f8fa;
+    --accent-bg: #eef1fb;   --accent-border: #7f77dd;
+    --teal-bg: #e1f5ee;     --teal-border: #1d9e75;
+    --coral-bg: #faece7;    --coral-border: #d85a30;
+    --amber-bg: #faeeda;    --amber-border: #ba7517;
+    --gray-bg: #f1efe8;     --gray-border: #888780;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg);
+    max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.6; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 44px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  a { color: #0969da; }
+  code { background: var(--code-bg); padding: 2px 5px; border-radius: 4px; font-size: 90%; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; font-size: 13.5px; vertical-align: top; }
+  th { background: var(--code-bg); }
+  ul, ol { padding-left: 22px; }
+  .diagram { margin: 28px 0; }
+  .box { fill: var(--gray-bg); stroke: var(--gray-border); stroke-width: 1; }
+  .box-purple { fill: var(--accent-bg); stroke: var(--accent-border); stroke-width: 1; }
+  .box-teal { fill: var(--teal-bg); stroke: var(--teal-border); stroke-width: 1; }
+  .box-coral { fill: var(--coral-bg); stroke: var(--coral-border); stroke-width: 1; }
+  .box-amber { fill: var(--amber-bg); stroke: var(--amber-border); stroke-width: 1; }
+  .title { font-size: 14px; font-weight: 600; fill: var(--text); }
+  .subtitle-svg { font-size: 12px; fill: var(--muted); }
+  .arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  .note { font-size: 12px; fill: var(--muted); }
+  .cycle-note { font-size: 12px; fill: var(--muted); font-style: italic; }
+  figcaption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 600px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  .doc-nav { max-width: 860px; margin: 0 auto 8px; padding: 14px 24px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13.5px; }
+  .doc-nav a { text-decoration: none; color: var(--muted); border-bottom: 1px solid transparent; }
+  .doc-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+</style>
+</head>
+<body>
+
+<div class="doc-nav">
+  <a href="index.html">← Back to portfolio</a>
+  <a href="antenne_architecture_fr.html">Français</a>
+</div>
+
+<h1>Antenne</h1>
+<p class="subtitle">Architecture overview — 9DoF motion sensor → OSC over Ethernet</p>
+
+<h2>Purpose</h2>
+<p>
+A self-contained motion sensor "antenna": plug the MPU9150 module directly into the ESP32-PoE's UEXT
+connector, power the board over a single Ethernet cable (PoE — no separate power supply), and it streams
+accelerometer, gyroscope, magnetometer, and fused orientation data as OSC to any receiving software (Max/MSP,
+Pure Data, TouchDesigner, etc.) at 50 Hz. Onboard gyroscope calibration runs automatically at boot, and a
+one-time (or as-needed) magnetometer calibration — triggered by a button hold or a remote OSC message — is
+persisted to flash so it survives reboots.
+</p>
+
+<h2>Hardware</h2>
+<table>
+  <tr><th>Part</th><th>Reference</th></tr>
+  <tr><td>MCU board</td><td>Olimex ESP32-PoE (16 MB flash)</td></tr>
+  <tr><td>Motion sensor</td><td>Olimex MOD-MPU9150 (MPU-6050 accel/gyro + AK8975 magnetometer, in one package)</td></tr>
+  <tr><td>Connection</td><td>UEXT connector — plugs directly, no wiring</td></tr>
+  <tr><td>Network</td><td>RJ45 Ethernet, powered over PoE</td></tr>
+  <tr><td>I2C pins (UEXT)</td><td>SDA = GPIO13, SCL = GPIO16</td></tr>
+  <tr><td>Onboard LED</td><td>GPIO33, active-high</td></tr>
+  <tr><td>BTN1</td><td>GPIO34, active-low, external pull-up</td></tr>
+</table>
+
+<h2>System overview</h2>
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 380" role="img">
+<title>Antenne system overview</title>
+<desc>A MOD-MPU9150 9DoF motion sensor connects over I2C to Olimex ESP32-PoE firmware, which fuses orientation and streams an OSC bundle over PoE Ethernet to receiving software at 50 Hz. Incoming OSC can trigger magnetometer calibration on the board.</desc>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">MOD-MPU9150 (UEXT, I2C)</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Accelerometer,</tspan><tspan x="340" dy="13">gyroscope, magnetometer</tspan></text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a1)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle" style="font-size:13.7px">Olimex ESP32-PoE firmware</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Reads sensors, fuses orientation</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a1)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle" style="font-size:12.8px">OSC bundle out, PoE Ethernet</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">50 Hz to DEST_IP:DEST_PORT</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a1)"/>
+<rect class="box-amber" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Receiving software</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:10.7px">Max/MSP, Pure Data, TouchDesigner...</text>
+<text class="note" x="340" y="345" text-anchor="middle">Incoming OSC on port 8888 (/mpu/calibrate) can trigger a</text>
+<text class="note" x="340" y="363" text-anchor="middle">magnetometer calibration session on the board at any time</text>
+</svg>
+<figcaption>Sensor → firmware → OSC over Ethernet → receiving software</figcaption>
+</div>
+<p>Incoming OSC on port 8888 (<code>/mpu/calibrate</code>) can trigger a magnetometer calibration session on
+the board at any time, independent of the outgoing data stream.</p>
+
+<h2>Firmware main loop</h2>
+<p>The board runs a fixed 50 Hz loop (<code>LOOP_MS = 20</code>):</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Antenne firmware main loop</title>
+<desc>After boot calibration and loading any saved magnetometer bias, the firmware reads the MPU9150 and AK8975 over I2C, applies magnetometer bias and runs a 9-axis Kalman fusion, sends the resulting OSC bundle over Ethernet, then updates the LED and checks the button and incoming OSC before repeating the whole loop every 20 milliseconds.</desc>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle" style="font-size:8.6px">Boot: Ethernet, load mag bias, calibrate gyro</text>
+<text class="subtitle-svg" x="340" y="60" text-anchor="middle">1-second still calibration</text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a2)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle" style="font-size:11.4px">Read MPU9150 + AK8975 over I2C</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle">Accel, gyro, raw magnetometer</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a2)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle" style="font-size:10.0px">Bias correction + 9-axis Kalman fusion</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle" style="font-size:8.3px">puara-gestures — roll, pitch, tilt-compensated yaw</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a2)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle" style="font-size:12.1px">Send OSC bundle over Ethernet</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle">Accel, gyro, mag, euler angles, tilt</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a2)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle" style="font-size:8.7px">Update LED, check BTN1 and incoming OSC</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle">May trigger a calibration session</text>
+<text class="cycle-note" x="340" y="415" text-anchor="middle">↻ repeats every 20 ms (50 Hz loop)</text>
+</svg>
+<figcaption>The fixed-rate main loop, from sensor read to OSC send</figcaption>
+</div>
+
+<ol>
+  <li><strong>Boot</strong> — brings up the Ethernet link (static IP, up to 8 s wait), loads any previously
+  saved magnetometer bias from flash (NVS), initializes the MPU9150 over I2C, and runs a 1-second
+  gyroscope bias calibration (200 samples while the sensor must stay still).</li>
+  <li><strong>Sensor read</strong> — one 14-byte I2C burst read covers accelerometer and gyroscope
+  registers together; the magnetometer is read separately (via the MPU9150's I2C bypass mode giving direct
+  access to the onboard AK8975) whenever its data-ready bit is set.</li>
+  <li><strong>Orientation fusion</strong> — if a magnetometer calibration has been completed, the
+  corresponding per-axis bias is subtracted before the vector is normalized to unit length. The result feeds
+  a 9-axis Kalman filter (from <code>puara-gestures</code>) that fuses accelerometer, gyroscope, and
+  magnetometer into roll, pitch, and tilt-compensated yaw.</li>
+  <li><strong>OSC send</strong> — one bundle per loop iteration, gated on the Ethernet link being up.</li>
+  <li><strong>LED / input handling</strong> — the LED state machine and the BTN1 long-press detector run
+  every cycle, and any incoming OSC calibration request is dispatched here too.</li>
+</ol>
+
+<h2>Magnetometer calibration</h2>
+<p>
+Hard-iron interference (nearby metal, speakers, power supplies) shifts the magnetometer's zero point, which
+throws off yaw. Calibration removes that constant offset — needed once at first setup, and again whenever
+the instrument's physical configuration changes.
+</p>
+
+<div class="diagram">
+<svg width="100%" viewBox="0 0 680 420" role="img">
+<title>Antenne magnetometer calibration sequence</title>
+<desc>Calibration is triggered either by holding a button for 5 seconds or by an incoming OSC message. A 30-second window then tracks the minimum and maximum magnetometer reading on each axis while the sensor is rotated through every orientation. The midpoint of each axis's min and max becomes the hard-iron bias, which is saved to flash and loaded automatically on every future boot.</desc>
+<defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#57606a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<rect class="box" x="240" y="20" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="42" text-anchor="middle">Trigger calibration</text>
+<text class="subtitle-svg" x="340" y="54" text-anchor="middle"><tspan x="340" dy="0">Hold BTN1 5s, or send</tspan><tspan x="340" dy="13">OSC /mpu/calibrate</tspan></text>
+<line class="arrow" x1="340" y1="76" x2="340" y2="98" marker-end="url(#a3)"/>
+<rect class="box-purple" x="240" y="100" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="122" text-anchor="middle">30s rotation window</text>
+<text class="subtitle-svg" x="340" y="140" text-anchor="middle" style="font-size:9.1px">LED fast blink (4 Hz), tracks min/max per axis</text>
+<line class="arrow" x1="340" y1="156" x2="340" y2="178" marker-end="url(#a3)"/>
+<rect class="box-coral" x="240" y="180" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="202" text-anchor="middle">Compute hard-iron bias</text>
+<text class="subtitle-svg" x="340" y="220" text-anchor="middle">bias = (min + max) / 2, per axis</text>
+<line class="arrow" x1="340" y1="236" x2="340" y2="258" marker-end="url(#a3)"/>
+<rect class="box-teal" x="240" y="260" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="282" text-anchor="middle">Save to flash (NVS)</text>
+<text class="subtitle-svg" x="340" y="300" text-anchor="middle" style="font-size:11.2px">Solid LED for 1s confirms completion</text>
+<line class="arrow" x1="340" y1="316" x2="340" y2="338" marker-end="url(#a3)"/>
+<rect class="box-amber" x="240" y="340" width="200" height="56" rx="8"/>
+<text class="title" x="340" y="362" text-anchor="middle" style="font-size:9.1px">Loaded automatically on every future boot</text>
+<text class="subtitle-svg" x="340" y="380" text-anchor="middle" style="font-size:9.8px">Survives power cuts and firmware updates</text>
+</svg>
+<figcaption>Calibration sequence, from trigger to persisted bias</figcaption>
+</div>
+
+<p>
+Calibration can be started two ways — holding the physical button, or sending an OSC message from the same
+network the board streams to — so it can be triggered either at the instrument itself or remotely from
+whatever software is already receiving its data. During the 30-second window, rotating the sensor through
+every orientation (a figure-8 motion covering all axes works well) lets the firmware record the true minimum
+and maximum reading on each magnetometer axis; the midpoint of each axis's min/max becomes that axis's bias.
+The result is written to non-volatile storage and survives power cuts and firmware re-flashes.
+</p>
+
+<h2>LED states</h2>
+<table>
+  <tr><th>LED behaviour</th><th>Meaning</th></tr>
+  <tr><td>Off</td><td>No Ethernet link</td></tr>
+  <tr><td>Slow blink (1 Hz)</td><td>Connected and streaming</td></tr>
+  <tr><td>Solid ON</td><td>BTN1 is being held — keep holding to start calibration</td></tr>
+  <tr><td>Fast blink (4 Hz)</td><td>Magnetometer calibration in progress</td></tr>
+  <tr><td>Solid for 1 second</td><td>Calibration just completed successfully</td></tr>
+</table>
+
+<h2>OSC reference</h2>
+<h3>Outgoing (board → computer), one bundle per 20 ms</h3>
+<table>
+  <tr><th>Address</th><th>Type</th><th>Unit</th><th>Description</th></tr>
+  <tr><td><code>/mpu/accel/x</code> <code>/mpu/accel/y</code> <code>/mpu/accel/z</code></td><td>float</td><td>g</td><td>Raw accelerometer</td></tr>
+  <tr><td><code>/mpu/gyro/x</code> <code>/mpu/gyro/y</code> <code>/mpu/gyro/z</code></td><td>float</td><td>°/s</td><td>Gyroscope, bias-corrected</td></tr>
+  <tr><td><code>/mpu/mag/x</code> <code>/mpu/mag/y</code> <code>/mpu/mag/z</code></td><td>float</td><td>unit sphere</td><td>Magnetometer, normalized; offset before calibration, centered on origin after</td></tr>
+  <tr><td><code>/mpu/euler/roll</code></td><td>float</td><td>° (0–360)</td><td>Rotation around X</td></tr>
+  <tr><td><code>/mpu/euler/pitch</code></td><td>float</td><td>° (−90–+90)</td><td>Rotation around Y</td></tr>
+  <tr><td><code>/mpu/euler/yaw</code></td><td>float</td><td>° (0–360)</td><td>Heading, tilt-compensated</td></tr>
+  <tr><td><code>/mpu/tilt</code></td><td>float</td><td>° (0–180)</td><td>Combined tilt magnitude, <code>sqrt(roll² + pitch²)</code>, clamped</td></tr>
+  <tr><td><code>/mpu/btn1</code></td><td>int</td><td>—</td><td>1 while BTN1 is held, else 0</td></tr>
+  <tr><td><code>/mpu/cal/status</code></td><td>int</td><td>—</td><td>0 = uncalibrated, 1 = calibrating, 2 = calibrated</td></tr>
+</table>
+
+<h3>Incoming (computer → board), port 8888</h3>
+<table>
+  <tr><th>Address</th><th>Arguments</th><th>Description</th></tr>
+  <tr><td><code>/mpu/calibrate</code></td><td><em>(none)</em></td><td>Starts a 30-second magnetometer calibration session</td></tr>
+</table>
+
+<h2>Adjustable parameters</h2>
+<table>
+  <tr><th>Parameter</th><th>Location</th><th>Default</th><th>Effect</th></tr>
+  <tr><td>Send rate</td><td><code>LOOP_MS</code></td><td><code>20</code> (50 Hz)</td><td>Lower = faster updates; don't go below <code>10</code> (100 Hz)</td></tr>
+  <tr><td>Kalman process noise (Q)</td><td><code>kalman(Q, R)</code></td><td><code>0.001</code></td><td>How much the filter trusts gyroscope integration; lower = smoother but slower to respond</td></tr>
+  <tr><td>Kalman measurement noise (R)</td><td><code>kalman(Q, R)</code></td><td><code>0.01</code></td><td>How much the filter trusts accel/mag corrections; higher = smoother but drifts more under disturbance</td></tr>
+  <tr><td>Gyroscope DLPF bandwidth</td><td><code>R_CONFIG</code> register write</td><td><code>0x04</code> (~21 Hz)</td><td><code>0x02</code>=98 Hz (fast movement) … <code>0x05</code>=10 Hz (near-static); current setting suits slow, deliberate movement</td></tr>
+</table>
+
+<h2>Project structure</h2>
+<pre><code>├── boards/
+│   └── esp32-poe-16mb.json     custom PlatformIO board definition
+├── examples/
+│   ├── ESP32_PoE_Ethernet_SD_Card_Arduino.ino
+│   ├── ESP32_PoE_WebServer_Demo.ino
+│   └── MagnetometreCalibrationDemo.cpp
+├── mpu9150_demo/                original bare sensor demo
+├── src/
+│   └── main.cpp                 firmware (edit this)
+└── platformio.ini</code></pre>
+<p>
+The <code>examples/</code> and <code>mpu9150_demo/</code> folders are bundled reference material, not part
+of the firmware that actually runs — each comes from a different origin and is kept for reference rather
+than executed:
+</p>
+<ul>
+  <li><strong><code>mpu9150_demo.ino</code></strong> — the original bare-metal MPU-9150 I2C register demo
+  (public domain, by Arduino user "frtrobotik" / Tobias Hübner, Olimexino edition by Chris B.) that the
+  sensor-register logic in this project traces back to.</li>
+  <li><strong><code>MagnetometreCalibrationDemo.cpp</code></strong> — a magnetometer-calibration reference
+  example from a different IDMIL project (GuitarAMI, Edu Meneses, built on the Puara templates), kept here
+  as a comparison point for calibration UX on a fuller IMU stack (LSM9DS1/BNO080).</li>
+  <li><strong><code>ESP32_PoE_WebServer_Demo.ino</code></strong> — a general-purpose webserver demo for the
+  Olimex ESP32-PoE board (controls various Olimex UEXT modules), originally by David Bird, adapted for this
+  board — unrelated to the MPU9150 but useful as an ESP32-PoE peripheral reference.</li>
+  <li><strong><code>ESP32_PoE_Ethernet_SD_Card_Arduino.ino</code></strong> — a combined SD-card + Ethernet
+  bring-up demo for the same board.</li>
+</ul>
+
+<h2>Custom PlatformIO board definition</h2>
+<p>
+<code>boards/esp32-poe-16mb.json</code> defines the Olimex ESP32-PoE's 16 MB-flash variant for PlatformIO,
+since it isn't one of the built-ins: correct partition table and linker script for 16 MB flash, the Ethernet
+PHY wiring specific to this board (LAN8720 over RMII, MDC/MDIO pins, power pin, clock mode), and upload
+parameters (921,600 baud, esptool/espota).
+</p>
+
+<h2>Dependencies</h2>
+<p>Managed automatically by PlatformIO:</p>
+<ul>
+  <li><a href="https://github.com/CNMAT/OSC">CNMAT OSC</a> — OSC message/bundle library</li>
+  <li><a href="https://github.com/Puara/puara-gestures">puara-gestures</a> — 9-axis Kalman filter for orientation</li>
+  <li>ESP32 Arduino framework (Espressif32, via PlatformIO)</li>
+</ul>
+
+</body>
+</html>
