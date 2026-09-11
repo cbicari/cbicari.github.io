@@ -17,7 +17,16 @@
     --copper: #A8582E;
     --copper-dark: #7C3F1F;
     --rule: #D7DAD2;
+    --console-bg: #14181A;
+    --console-text: #E3A15C;
+    --console-dim: #8A7358;
     --radius: 3px;
+
+    --blue-panel: #EDF1F5;
+    --blue-panel-2: #E1E9EF;
+    --blue-ink: #2E4A66;
+    --blue-ink-dim: #8CA0B3;
+    --out-fill: #F3E4D2;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -39,9 +48,9 @@
     margin: 0;
   }
   .mono { font-family: 'IBM Plex Mono', monospace; }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 0 28px; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
 
-  /* ---------- i18n ---------- */
+  /* ---------- i18n (French kept in the markup but silent — no visible toggle for now) ---------- */
   [data-lang][hidden] { display: none !important; }
 
   /* ---------- header ---------- */
@@ -54,22 +63,8 @@
   nav.links a { text-decoration: none; color: var(--ink-muted); border-bottom: 1px solid transparent; }
   nav.links a:hover { color: var(--copper-dark); border-bottom-color: var(--copper); }
 
-  .lang-toggle { display: flex; gap: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-  .lang-toggle button {
-    background: transparent; border: 1px solid var(--rule); color: var(--ink-muted);
-    padding: 5px 10px; border-radius: var(--radius); cursor: pointer; line-height: 1;
-  }
-  .lang-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .lang-toggle button:hover { border-color: var(--copper); }
-  .lang-toggle button:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
-
-  @media (max-width: 620px) {
-    .header-right { gap: 12px; justify-content: flex-end; width: 100%; }
-    header.site .wrap { flex-direction: column; align-items: flex-start; }
-  }
-
   /* ---------- hero ---------- */
-  .hero { padding: 72px 0 40px; }
+  .hero { padding: 64px 0 48px; }
   .byline {
     font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-faint);
     margin: 0 0 14px;
@@ -96,15 +91,7 @@
   .term:hover .term-tip, .term:focus .term-tip {
     opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
   }
-  @media (max-width: 500px) {
-    .term-tip { max-width: 200px; left: 0; transform: translateX(0) translateY(4px); }
-    .term-tip::before { left: 20px; transform: none; }
-    .term:hover .term-tip, .term:focus .term-tip { transform: translateX(0) translateY(0); }
-  }
   .hero h1 { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; max-width: 34ch; }
-  @media (max-width: 620px) {
-    .hero h1 { font-size: clamp(19px, 5.5vw, 25px); }
-  }
   .hero .sub { margin-top: 18px; max-width: 62ch; color: var(--ink-muted); font-size: 16.5px; }
   .hero .sub strong { color: var(--ink); font-weight: 600; }
   .hero .cta-row { margin-top: 28px; display: flex; gap: 14px; flex-wrap: wrap; }
@@ -117,54 +104,103 @@
   .btn-secondary { color: var(--ink-muted); }
   .btn-secondary:hover { color: var(--copper-dark); border-color: var(--copper); }
 
-  /* ---------- highlights ---------- */
-  .highlights { padding: 40px 0 8px; border-top: 1px solid var(--rule); }
-  .highlights h2.eyebrow {
-    font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint);
-    font-family: 'IBM Plex Mono', monospace; font-weight: 500; margin-bottom: 22px;
-  }
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-  .card {
-    background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
-    padding: 20px 20px 18px; display: flex; flex-direction: column;
-  }
-  .card h3 { font-size: 16.5px; margin-bottom: 6px; }
-  .card p { color: var(--ink-muted); font-size: 14px; margin: 0 0 14px; flex-grow: 1; }
-  .card .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-  .card .tag {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink);
-    background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 3px 8px;
-  }
-  .card .doc-link { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
-  .card .doc-link a { text-decoration: none; border-bottom: 1px solid var(--copper); }
-  .card .doc-link a:hover { color: var(--copper-dark); }
+  .console { margin-top: 36px; background: var(--console-bg); border-radius: var(--radius); padding: 20px 22px; max-width: 640px; }
+  .console .console-head { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--console-dim); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+  .console .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--console-dim); }
+  .console-lines { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--console-text); height: 108px; overflow: hidden; }
+  .console-lines .line { opacity: 0; transform: translateY(2px); transition: opacity .35s ease, transform .35s ease; white-space: pre-wrap; word-break: break-word; line-height: 1.5; margin: 0 0 6px; }
+  .console-lines .line.show { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) { .console-lines .line { transition: none; opacity: 1; transform: none; } }
 
-  .more-link { margin: 28px 0 8px; }
+  /* ---------- approach ---------- */
+  .approach { padding: 40px 0 8px; border-top: 1px solid var(--rule); }
+  .approach p { max-width: 68ch; font-size: 17px; color: var(--ink-muted); line-height: 1.7; }
+
+  /* ---------- skills ---------- */
+  .skills { padding: 40px 0 8px; border-top: 1px solid var(--rule); }
+  .skills h2.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; font-weight: 500; margin-bottom: 22px; }
+  .skill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px 28px; }
+  .skill-group h3 { font-size: 13px; color: var(--ink-muted); font-weight: 500; font-family: 'IBM Plex Sans', sans-serif; margin-bottom: 10px; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius); padding: 4px 9px; line-height: 1.4; }
+
+  /* ---------- projects ---------- */
+  .projects { padding: 56px 0 20px; border-top: 1px solid var(--rule); }
+  .projects > .wrap > h2.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; font-weight: 500; margin-bottom: 30px; }
+  .pillar { margin-bottom: 52px; }
+  .pillar-label { font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--copper-dark); border-bottom: 1px solid var(--rule); padding-bottom: 10px; margin-bottom: 22px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .card { background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius); padding: 22px 22px 20px; display: flex; flex-direction: column; }
+  .card h3 { font-size: 17px; margin-bottom: 4px; }
+  .card p { color: var(--ink-muted); font-size: 14.5px; margin: 0 0 14px; flex-grow: 1; }
+  .card .tag-row { margin-bottom: 14px; }
+  .card .tag { background: var(--paper); }
+  .card .repo-link { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+  .card .repo-link a { text-decoration: none; border-bottom: 1px solid var(--copper); }
+  .card .repo-link a:hover { color: var(--copper-dark); }
+  .card .private-note { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-faint); }
+
+  /* ---------- blueprint diagrams ---------- */
+  .bp-panel { background: var(--blue-panel); border: 1px solid #D7E0E8; border-radius: 2px; padding: 8px 10px 10px; margin: 10px 0 16px; }
+  .bp-panel svg { display: block; width: 100%; height: auto; }
+  .bp-box { fill: var(--blue-panel-2); stroke: var(--blue-ink); stroke-width: 1; }
+  .bp-box-out { fill: var(--out-fill); stroke: var(--copper); stroke-width: 1; }
+  .bp-line { stroke: var(--blue-ink); stroke-width: 1; fill: none; }
+  .bp-corner { stroke: var(--blue-ink-dim); stroke-width: 1; fill: none; }
+  .bp-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; fill: var(--blue-ink); font-weight: 500; }
+  .bp-sub { font-family: 'IBM Plex Mono', monospace; font-size: 7.6px; fill: var(--blue-ink-dim); }
+  .bp-out-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; fill: var(--copper-dark); font-weight: 500; }
+  .bp-out-sub { font-family: 'IBM Plex Mono', monospace; font-size: 7.6px; fill: var(--copper-dark); opacity: 0.75; }
 
   /* ---------- footer ---------- */
-  footer.site { border-top: 1px solid var(--rule); padding: 32px 0 48px; margin-top: 40px; }
+  footer.site { border-top: 1px solid var(--rule); padding: 32px 0 48px; margin-top: 24px; }
   footer.site p { color: var(--ink-muted); font-size: 14px; max-width: 60ch; }
   footer.site .contact { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
   footer.site .contact a { margin-right: 18px; text-decoration: none; border-bottom: 1px solid var(--copper); }
+
+  /* ---------- mobile (all overrides live here, after every base rule they touch) ---------- */
+  @media (max-width: 620px) {
+    .header-right { gap: 12px; justify-content: flex-end; width: 100%; }
+    header.site .wrap { flex-direction: column; align-items: flex-start; }
+    nav.links { font-size: 12px; gap: 14px; }
+    .hero { padding: 44px 0 32px; }
+    .hero h1 { font-size: clamp(19px, 5.5vw, 25px); }
+    .console-lines { height: 184px; }
+  }
+  @media (max-width: 500px) {
+    .term-tip { max-width: 200px; left: 0; transform: translateX(0) translateY(4px); }
+    .term-tip::before { left: 20px; transform: none; }
+    .term:hover .term-tip, .term:focus .term-tip { transform: translateX(0) translateY(0); }
+  }
+  @media (max-width: 400px) {
+    nav.links { gap: 10px; }
+    nav.links a[href="https://github.com/cbicari"] { display: none; }
+  }
 </style>
 </head>
 <body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="bpArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#2E4A66" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <pattern id="bpGrid" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.6" fill="#2E4A66" fill-opacity="0.16"/>
+    </pattern>
+  </defs>
+</svg>
 
 <header class="site">
   <div class="wrap">
     <div class="brand">Latent Systems<span>.</span></div>
     <div class="header-right">
       <nav class="links">
-        <a href="portfolio.html">
-          <span data-lang="en">Full portfolio →</span>
-          <span data-lang="fr" hidden>Portfolio complet →</span>
-        </a>
+        <a href="#skills"><span data-lang="en">Skills</span><span data-lang="fr" hidden>Compétences</span></a>
+        <a href="#projects"><span data-lang="en">Projects</span><span data-lang="fr" hidden>Projets</span></a>
+        <a href="#contact">Contact</a>
         <a href="https://github.com/cbicari" target="_blank" rel="noopener">GitHub</a>
       </nav>
-      <div class="lang-toggle" role="group" aria-label="Language / Langue">
-        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-set-lang="fr" aria-pressed="false">FR</button>
-      </div>
     </div>
   </div>
 </header>
@@ -203,151 +239,575 @@
       </span>
     </p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="portfolio.html">
-        <span data-lang="en">See the full portfolio</span>
-        <span data-lang="fr" hidden>Voir le portfolio complet</span>
+      <a class="btn btn-primary" href="#projects">
+        <span data-lang="en">See the work</span>
+        <span data-lang="fr" hidden>Voir les projets</span>
       </a>
       <a class="btn btn-secondary" href="#contact">
         <span data-lang="en">Get in touch</span>
         <span data-lang="fr" hidden>Me contacter</span>
       </a>
     </div>
+
+    <div class="console" role="img" aria-label="Simulated device console cycling through real telemetry lines from the projects below">
+      <div class="console-head">
+        <span class="dot"></span>
+        <span data-lang="en">device console — live telemetry (representative)</span>
+        <span data-lang="fr" hidden>console de l'appareil — télémétrie en direct (représentative)</span>
+      </div>
+      <div class="console-lines" id="console-lines"></div>
+    </div>
   </div>
 </section>
 
-<section class="highlights" id="highlights">
+<section class="approach">
+  <div class="wrap">
+    <p>Most of what's here starts as an artistic or creative intention — a gesture, an installation, an
+    instrument — that needs a system underneath it to actually exist. The engineering is in service of that:
+    understanding a specific situation closely enough to know what it really requires. These projects are
+    built to work in the conditions they're actually meant for — in a gallery, on a stage, outdoors,
+    unattended overnight. That means understanding the specific conditions a piece has to live in before
+    deciding how to build it.</p>
+  </div>
+</section>
+
+<section class="skills" id="skills">
   <div class="wrap">
     <h2 class="eyebrow">
-      <span data-lang="en">Selected work</span>
-      <span data-lang="fr" hidden>Travaux sélectionnés</span>
+      <span data-lang="en">Skills</span><span data-lang="fr" hidden>Compétences</span>
     </h2>
-    <div class="card-grid">
-
-      <div class="card">
-        <h3>Puara — embedded framework</h3>
-        <p>
-          <span data-lang="en">Open-source C++ framework for networked ESP32 controllers: WiFi,
-          a browser-based settings server, and gesture recognition, reconfigurable from a browser with no
-          reflashing. Used and forked by outside researchers and students.</span>
-          <span data-lang="fr" hidden>Framework C++ open source pour des contrôleurs ESP32 en
-          réseau : WiFi, serveur de réglages basé sur navigateur et reconnaissance de gestes, reconfigurable
-          depuis un navigateur sans reflashage. Utilisé et forké par des chercheurs et étudiants externes.</span>
-        </p>
-        <div class="tag-row">
-          <span class="tag">C++</span><span class="tag">ESP32</span><span class="tag">OSC</span>
-        </div>
-        <div class="doc-link">
-          <span data-lang="en"><a href="puara_ecosystem_architecture_en.html">Read the architecture write-up →</a></span>
-          <span data-lang="fr" hidden><a href="puara_ecosystem_architecture_fr.html">Lire la note d'architecture →</a></span>
-        </div>
-      </div>
-
-      <div class="card">
+    <div class="skill-grid">
+      <div class="skill-group">
         <h3>
-          <span data-lang="en">Networked kinetic pendulum</span>
-          <span data-lang="fr" hidden>Pendule cinétique en réseau</span>
+          <span data-lang="en">Languages &amp; build tooling</span>
+          <span data-lang="fr" hidden>Langages et outils de build</span>
         </h3>
-        <p>
-          <span data-lang="en">Closed-loop control firmware for a multi-segment kinetic installation: four
-          independent Teensy 4.1 controllers with encoder feedback, safety interlocks, EEPROM management and crash-safe
-          recovery.</span>
-          <span data-lang="fr" hidden>Firmware de contrôle en boucle fermée pour une installation cinétique à
-          segments multiples : quatre contrôleurs Teensy 4.1 indépendants avec rétroaction d'encodeurs,
-          verrouillages de sécurité, gestion d'EEPROM et récupération après panne.</span>
-        </p>
         <div class="tag-row">
-          <span class="tag">Teensy 4.1</span><span class="tag">OSC</span><span class="tag">real-time control</span>
-        </div>
-        <div class="doc-link">
-          <span data-lang="en"><a href="pendulum_architecture_en.html">Read the architecture write-up →</a></span>
-          <span data-lang="fr" hidden><a href="pendulum_architecture_fr.html">Lire la note d'architecture →</a></span>
+          <span class="tag">C++</span><span class="tag">C</span><span class="tag">Python</span>
+          <span class="tag">Bash</span><span class="tag">CMake</span><span class="tag">PlatformIO</span>
         </div>
       </div>
-
-      <div class="card">
+      <div class="skill-group">
         <h3>
-          <span data-lang="en">Realtime latent-space synthesis</span>
-          <span data-lang="fr" hidden>Synthèse en temps réel dans l'espace latent</span>
+          <span data-lang="en">Embedded platforms</span>
+          <span data-lang="fr" hidden>Plateformes embarquées</span>
         </h3>
-        <p>
-          <span data-lang="en">Realtime neural audio synthesis (RAVE, via nn~) on a Raspberry Pi 5, with the
-          model's latent space steered live by hand-gesture tracking and/or a MIDI controller.</span>
-          <span data-lang="fr" hidden>Synthèse audio neuronale en temps réel (RAVE, via nn~) sur un Raspberry
-          Pi 5, avec l'espace latent du modèle piloté en direct par suivi de gestes et/ou par contrôleur MIDI.</span>
-        </p>
         <div class="tag-row">
-          <span class="tag">Raspberry Pi 5</span><span class="tag">neural audio</span><span class="tag">OSC</span>
-        </div>
-        <div class="doc-link">
-          <a href="https://github.com/cbicari/latent_space_synthesis" target="_blank" rel="noopener" class="mono">latent_space_synthesis</a> ·
-          <span data-lang="en"><a href="latent_space_synthesis_architecture_en.html">architecture write-up</a></span>
-          <span data-lang="fr" hidden><a href="latent_space_synthesis_architecture_fr.html">note d'architecture</a></span>
+          <span class="tag">ESP32-S3/C3</span><span class="tag">Teensy 4.1</span>
+          <span class="tag">Raspberry Pi 4/5</span><span class="tag">Arduino</span>
+          <span class="tag">FreeRTOS</span>
         </div>
       </div>
-
-      <div class="card">
+      <div class="skill-group">
         <h3>
-          <span data-lang="en">Improv based modular drum machine</span>
-          <span data-lang="fr" hidden>Séquenceur rythmique modulaire dédié à l'improvisation en musiques électroniques</span>
+          <span data-lang="en">Protocols &amp; networking</span>
+          <span data-lang="fr" hidden>Protocoles et réseau</span>
         </h3>
-        <p>
-          <span data-lang="en">A 20-module Eurorack drum and texture instrument for improvisation-based
-          experimental electronic music, designed against a hard power and space budget.</span>
-          <span data-lang="fr" hidden>Un instrument de percussion et de texture Eurorack à 20 modules pour la
-          musique électronique expérimentale basée sur l'improvisation, conçu selon un budget strict de
-          puissance et d'espace.</span>
-        </p>
         <div class="tag-row">
-          <span class="tag">Eurorack</span><span class="tag">signal routing</span><span class="tag">synthesis</span>
-        </div>
-        <div class="doc-link">
-          <span data-lang="en"><a href="vieux_neant_architecture_en.html">Read the architecture write-up →</a></span>
-          <span data-lang="fr" hidden><a href="vieux_neant_architecture_fr.html">Lire la note d'architecture →</a></span>
+          <span class="tag">OSC</span><span class="tag">BLE advertising</span>
+          <span class="tag">WiFi STA/AP</span><span class="tag">UDP</span>
+          <span class="tag">SLIP serial</span><span class="tag">mDNS</span>
         </div>
       </div>
-
-      <div class="card">
-          <span data-lang="en">Self-observing volumetric installation</span>
-          <span data-lang="fr" hidden>Installation volumétrique auto-analysante</span>
-        <p>
-          <span data-lang="en">A real-time installation where a vision-language model watches the piece from
-          outside, describes it in English and French, and feeds that description back in to steer the
-          generative visuals — while spectators' own volumetric point cloud shapes the same imagery from the
-          inside.</span>
-          <span data-lang="fr" hidden>Une installation en temps réel où un modèle vision-langage observe la
-          pièce de l'extérieur, la décrit en anglais et en français, puis réinjecte cette description pour
-          orienter les visuels génératifs — pendant que le nuage de points volumétrique des spectateurs
-          façonne la même image de l'intérieur.</span>
-        </p>
+      <div class="skill-group">
+        <h3>
+          <span data-lang="en">Linux &amp; systems</span>
+          <span data-lang="fr" hidden>Linux et systèmes</span>
+        </h3>
         <div class="tag-row">
-          <span class="tag">Vision-language model</span><span class="tag">Stable Diffusion</span><span class="tag">Pointcloud</span>
-        </div>
-        <div class="doc-link">
-          <span data-lang="en"><a href="aida_installation_architecture_en.html">Read the architecture write-up →</a></span>
-          <span data-lang="fr" hidden><a href="aida_installation_architecture_fr.html">Lire la note d'architecture →</a></span>
+          <span class="tag">udev</span><span class="tag">V4L2</span><span class="tag">kernel modules</span>
+          <span class="tag">GStreamer</span><span class="tag">systemd</span>
+          <span class="tag">distributed orchestration</span>
         </div>
       </div>
+      <div class="skill-group">
+        <h3>
+          <span data-lang="en">ML &amp; edge AI</span>
+          <span data-lang="fr" hidden>IA embarquée et ML</span>
+        </h3>
+        <div class="tag-row">
+          <span class="tag">PyTorch</span><span class="tag">VLM inference</span>
+          <span class="tag">LoRA fine-tuning</span><span class="tag">MediaPipe</span>
+          <span class="tag">RAVE / nn~</span><span class="tag">TF-IDF</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h3>
+          <span data-lang="en">Tooling &amp; practices</span>
+          <span data-lang="fr" hidden>Outils et pratiques</span>
+        </h3>
+        <div class="tag-row">
+          <span class="tag">Git</span><span class="tag">GitHub Actions CI</span>
+          <span class="tag">Doxygen / mdBook</span><span class="tag">Syncthing</span>
+          <span class="tag">EEPROM persistence</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
+<section class="projects" id="projects">
+  <div class="wrap">
+
+    <div class="pillar">
+      <div class="pillar-label"><span data-lang="en">Real-time embedded control</span><span data-lang="fr" hidden>Contrôle embarqué temps réel</span></div>
+      <div class="card-grid">
+
+        <div class="card">
+          <h3>Puara — embedded framework</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: core puara-module and puara-gestures libraries feed synchronized PlatformIO and Arduino templates, producing a flashed ESP32 device.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">puara-module + puara-gestures</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">core C++ libraries</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">PlatformIO + Arduino templates</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">synchronized packagings</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">Flashed ESP32 device</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">firmware + filesystem</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Co-maintain a 4-repo open-source C++ framework for networked ESP32 controllers: a core
+            library abstracting WiFi, a browser-based settings server, and persistent config; a standalone
+            gesture-recognition library; and two synchronized packagings covering OSC, BLE advertising, and
+            libmapper. Used and forked by outside researchers and students.</span>
+            <span data-lang="fr" hidden>Co-maintiens un framework C++ open source réparti sur 4 dépôts pour des contrôleurs ESP32 en
+            réseau : une bibliothèque centrale qui abstrait le WiFi, un serveur de réglages basé sur navigateur
+            et une configuration persistante ; une bibliothèque autonome de reconnaissance de gestes ; et deux
+            conditionnements synchronisés couvrant OSC, l'annonce BLE et libmapper. Utilisé et forké par des
+            chercheurs et étudiants externes.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">C++</span><span class="tag">ESP32</span><span class="tag">WiFi/BLE</span>
+            <span class="tag">OSC</span><span class="tag">CI</span>
+          </div>
+          <div class="repo-link">
+            <a href="https://github.com/Puara/puara-module" target="_blank" rel="noopener">puara-module</a> ·
+            <a href="https://github.com/Puara/puara-module-templates" target="_blank" rel="noopener">templates</a> ·
+            <a href="https://github.com/Puara/puara-arduino" target="_blank" rel="noopener">arduino</a> ·
+            <a href="https://github.com/Puara/puara-gestures" target="_blank" rel="noopener">gestures</a> ·
+            <span data-lang="en"><a href="puara_ecosystem_architecture_en.html">architecture write-up</a></span>
+            <span data-lang="fr" hidden><a href="puara_ecosystem_architecture_fr.html">note d'architecture</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Networked kinetic pendulum</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: four Teensy 4.1 controllers drive motor and coil drivers, which actuate the pendulum's physical carriages and rotary drive.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">4 Teensy 4.1 controllers</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">OSC over SLIP serial</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Motor and coil drivers</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">Cytron boards, electromagnets</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">Physical actuators</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">carriages and rotary drive</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Closed-loop control firmware for a multi-segment kinetic installation: four independent
+            Teensy 4.1 controllers communicating over OSC/SLIP-serial, with encoder feedback, inter-carriage
+            safety interlocks, EEPROM crash recovery, and direction-aware electromagnetic coil commutation.</span>
+            <span data-lang="fr" hidden>Firmware de contrôle en boucle fermée pour une installation cinétique à segments
+            multiples : quatre contrôleurs Teensy 4.1 indépendants communiquant en OSC via liaison série SLIP,
+            avec rétroaction d'encodeurs, verrouillages de sécurité inter-chariots, récupération après panne
+            via EEPROM et commutation électromagnétique des bobines selon le sens de déplacement.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">C++</span><span class="tag">Teensy 4.1</span><span class="tag">OSC</span>
+            <span class="tag">encoders</span><span class="tag">EEPROM</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Private firmware — available on request. <a href="pendulum_architecture_en.html">Read the architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Firmware privé — disponible sur demande. <a href="pendulum_architecture_fr.html">Lire la note d'architecture →</a></span>
+          </div>
+        </div>
+
+      </div>
     </div>
 
-    <p class="more-link mono">
-      <span data-lang="en"><a href="portfolio.html">→ 5 more projects in the full portfolio</a></span>
-      <span data-lang="fr" hidden><a href="portfolio.html">→ 5 autres projets dans le portfolio complet</a></span>
-    </p>
+    <div class="pillar">
+      <div class="pillar-label"><span data-lang="en">Embedded &amp; edge AI</span><span data-lang="fr" hidden>IA embarquée et en périphérie</span></div>
+      <div class="card-grid">
+
+        <div class="card">
+          <h3>snake_differ — on-device motion detection</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: onboard camera and microphone feed ESP32-S3 firmware, which outputs an OSC bundle over WiFi.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">OV2640 camera, PDM mic</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">onboard sensors</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">ESP32-S3 firmware</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">FreeRTOS tasks, about 30 Hz</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">OSC bundle output</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">motion and texture data</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">ESP32-S3 firmware performing real-time frame-difference motion detection and pixel-texture
+            analysis directly on-device, broadcasting bounding box, centroid, velocity, and zone-based
+            density metrics as OSC at ~30 Hz from concurrent FreeRTOS tasks.</span>
+            <span data-lang="fr" hidden>Firmware ESP32-S3 effectuant, directement sur l'appareil, une détection de mouvement
+            par différence d'images et une analyse de texture des pixels en temps réel, diffusant en OSC à
+            ~30 Hz la boîte englobante, le centroïde, la vitesse et des métriques de densité par zone, depuis
+            des tâches FreeRTOS concurrentes.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">ESP32-S3</span><span class="tag">FreeRTOS</span>
+            <span class="tag">embedded CV</span><span class="tag">OSC</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Private firmware — available on request. <a href="snake_differ_architecture_en.html">Read the architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Firmware privé — disponible sur demande. <a href="snake_differ_architecture_fr.html">Lire la note d'architecture →</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Realtime latent-space synthesis</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 252" role="img" aria-label="Diagram: gesture or MIDI input drives a Pure Data patch, which controls the nn~ RAVE model, producing JACK audio output.">
+              <rect x="0" y="0" width="400" height="252" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 230 L390 242 L378 242"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Hand gesture or MIDI input</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">two control paths</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Pure Data patch</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">routes control to nn~</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="154" text-anchor="middle">nn~ RAVE model</text>
+              <text class="bp-sub" x="200" y="167" text-anchor="middle">neural audio synthesis</text>
+              <line class="bp-line" x1="200" y1="176" x2="200" y2="200" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="200" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="214" text-anchor="middle">JACK audio output</text>
+              <text class="bp-out-sub" x="200" y="227" text-anchor="middle">Raspberry Pi 5, realtime</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Realtime neural audio synthesis (RAVE, via the nn~ Pure Data external) on a Raspberry Pi 5,
+            with the model's latent space steered live by hand-gesture tracking or a MIDI controller, under
+            Pure Data + JACK for low-latency audio I/O.</span>
+            <span data-lang="fr" hidden>Synthèse audio neuronale en temps réel (RAVE, via l'externe Pure Data nn~) sur un
+            Raspberry Pi 5, avec l'espace latent du modèle piloté en direct par suivi de gestes de la main ou
+            par contrôleur MIDI, sous Pure Data + JACK pour des entrées-sorties audio à faible latence.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">Raspberry Pi 5</span><span class="tag">neural audio</span>
+            <span class="tag">Pure Data/JACK</span><span class="tag">OSC</span>
+          </div>
+          <div class="repo-link">
+            <a href="https://github.com/cbicari/latent_space_synthesis" target="_blank" rel="noopener">latent_space_synthesis</a> ·
+            <span data-lang="en"><a href="latent_space_synthesis_architecture_en.html">architecture write-up</a></span>
+            <span data-lang="fr" hidden><a href="latent_space_synthesis_architecture_fr.html">note d'architecture</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>LoRA captioning &amp; training pipeline</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 252" role="img" aria-label="Diagram: raw images are captioned by Janus-Pro, then kohya_ss trains a LoRA model, producing trained LoRA output.">
+              <rect x="0" y="0" width="400" height="252" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 230 L390 242 L378 242"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Raw image folder</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">captioning input</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Janus-Pro captioning</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">VLM plus TF-IDF concepts</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="154" text-anchor="middle">kohya_ss training</text>
+              <text class="bp-sub" x="200" y="167" text-anchor="middle">accelerate, LoRA fine-tune</text>
+              <line class="bp-line" x1="200" y1="176" x2="200" y2="200" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="200" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="214" text-anchor="middle">Trained LoRA output</text>
+              <text class="bp-out-sub" x="200" y="227" text-anchor="middle">safetensors plus concepts</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">End-to-end automation turning raw images into a trained LoRA model: a vision-language model
+            captions images and extracts key concepts via TF-IDF, feeding a scripted kohya_ss/Stable
+            Diffusion training run — usable from a CLI or a desktop UI.</span>
+            <span data-lang="fr" hidden>Automatisation de bout en bout transformant des images brutes en modèle LoRA entraîné :
+            un modèle vision-langage légende les images et en extrait les concepts clés via TF-IDF, alimentant
+            un entraînement scripté kohya_ss/Stable Diffusion — utilisable en ligne de commande ou via une
+            interface de bureau.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">Python</span><span class="tag">PyTorch</span>
+            <span class="tag">VLM inference</span><span class="tag">LoRA</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Private pipeline — available on request. <a href="lora_pipeline_architecture_en.html">Read the architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Pipeline privé — disponible sur demande. <a href="lora_pipeline_architecture_fr.html">Lire la note d'architecture →</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Computer-vision + ML workshop pipeline</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 252" role="img" aria-label="Diagram: a webcam feed is tracked by MediaPipe, which sends OSC to Wekinator, which sends OSC to Ossia, Max, or TouchDesigner.">
+              <rect x="0" y="0" width="400" height="252" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 230 L390 242 L378 242"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Webcam feed</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">hand or body landmarks</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">MediaPipe tracking script</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">streams OSC, port 9000</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="154" text-anchor="middle">Wekinator</text>
+              <text class="bp-sub" x="200" y="167" text-anchor="middle">learns mapping, OSC out 12000</text>
+              <line class="bp-line" x1="200" y1="176" x2="200" y2="200" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="200" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="214" text-anchor="middle">Ossia, Max, TouchDesigner</text>
+              <text class="bp-out-sub" x="200" y="227" text-anchor="middle">sound, visuals, lights</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Teaching pipeline wiring computer vision (MediaPipe), machine learning (Wekinator), and
+            creative-coding software (Ossia Score / Max / TouchDesigner) together over OSC, with
+            cross-platform install scripts and troubleshooting docs for non-technical users.</span>
+            <span data-lang="fr" hidden>Pipeline pédagogique reliant la vision par ordinateur (MediaPipe), l'apprentissage
+            automatique (Wekinator) et des logiciels de creative coding (Ossia Score / Max / TouchDesigner)
+            entre eux via OSC, avec des scripts d'installation multiplateformes et une documentation de
+            dépannage pour un public non technique.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">MediaPipe</span><span class="tag">OSC</span>
+            <span class="tag">cross-platform</span><span class="tag">education</span>
+          </div>
+          <div class="repo-link">
+            <a href="https://github.com/cbicari/CV_ML_intermedia_pipeline_workshop" target="_blank" rel="noopener">CV_ML_intermedia_pipeline_workshop</a> ·
+            <span data-lang="en"><a href="cvml_pipeline_architecture_en.html">architecture write-up</a></span>
+            <span data-lang="fr" hidden><a href="cvml_pipeline_architecture_fr.html">note d'architecture</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Self-observing volumetric installation</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: depth cameras and an external fisheye camera feed volumetric capture and a vision-language model, which drive spherical projection and generative visuals in a closed self-observing loop.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Depth + fisheye cameras</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">volumetric + external view</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Point cloud + local VLM</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">Stable Diffusion, EN/FR description</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">Sphere projection</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">self-observing feedback loop</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">A real-time installation where a vision-language model watches the piece from
+            outside, describes it in English and French, and feeds that description back in as a prompt
+            steering the generative visuals — while spectators' own volumetric point cloud shapes the same
+            imagery from the inside.</span>
+            <span data-lang="fr" hidden>Une installation en temps réel où un modèle vision-langage observe la
+            pièce de l'extérieur, la décrit en anglais et en français, puis réinjecte cette description comme
+            invite pour orienter les visuels génératifs — pendant que le nuage de points volumétrique des
+            spectateurs façonne la même image de l'intérieur.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">Vision-language model</span><span class="tag">Stable Diffusion</span>
+            <span class="tag">OSC</span><span class="tag">real-time orchestration</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Private installation — available on request. <a href="aida_installation_architecture_en.html">Read the architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Installation privée — disponible sur demande. <a href="aida_installation_architecture_fr.html">Lire la note d'architecture →</a></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pillar">
+      <div class="pillar-label"><span data-lang="en">Systems &amp; distributed infrastructure</span><span data-lang="fr" hidden>Systèmes et infrastructure distribuée</span></div>
+      <div class="card-grid">
+
+        <div class="card">
+          <h3>Firefly MV / dc1394 camera integration</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 252" role="img" aria-label="Diagram: a Firefly MV camera is granted access by a udev rule, tested via libdc1394 or bridged via GStreamer, reaching consumer apps as a standard webcam.">
+              <rect x="0" y="0" width="400" height="252" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 230 L390 242 L378 242"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Firefly MV camera, USB</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">IIDC/DCAM protocol</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">udev rule</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">non-root USB access</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="154" text-anchor="middle">libdc1394 or GStreamer</text>
+              <text class="bp-sub" x="200" y="167" text-anchor="middle">raw test or virtual bridge</text>
+              <line class="bp-line" x1="200" y1="176" x2="200" y2="200" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="200" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="214" text-anchor="middle">Consumer apps</text>
+              <text class="bp-out-sub" x="200" y="227" text-anchor="middle">standard V4L2 webcam</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Reproducible Linux setup for an industrial IIDC/DCAM machine-vision camera: custom udev rules
+            for non-root USB access, a libdc1394 test harness, and a GStreamer/v4l2loopback bridge exposing
+            it as a standard V4L2 webcam.</span>
+            <span data-lang="fr" hidden>Configuration Linux reproductible pour une caméra industrielle de vision par ordinateur
+            IIDC/DCAM : règles udev personnalisées pour un accès USB sans droits root, un banc de test
+            libdc1394, et un pont GStreamer/v4l2loopback l'exposant comme une webcam V4L2 standard.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">Linux</span><span class="tag">udev</span>
+            <span class="tag">V4L2/GStreamer</span><span class="tag">kernel modules</span>
+          </div>
+          <div class="repo-link">
+            <a href="https://github.com/cbicari/firefly-mv-dc1394-setup" target="_blank" rel="noopener">firefly-mv-dc1394-setup</a> ·
+            <span data-lang="en"><a href="firefly_mv_architecture_en.html">architecture write-up</a></span>
+            <span data-lang="fr" hidden><a href="firefly_mv_architecture_fr.html">note d'architecture</a></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>technocompost — distributed multi-agent pipeline</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 192" role="img" aria-label="Diagram: a Raspberry Pi cluster runs per-Pi agent decisions or tile claims, streaming a composited canvas to a TCP display server.">
+              <rect x="0" y="0" width="400" height="192" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 170 L390 182 L378 182"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Raspberry Pi cluster</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">Syncthing shared folder</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Agent choice or tile claim</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">LLM pick or file-locked tile</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="154" text-anchor="middle">Display server, TCP</text>
+              <text class="bp-out-sub" x="200" y="167" text-anchor="middle">live composited canvas</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Distributed image-processing installation across a Raspberry Pi cluster, in two
+            architectures: per-Pi AI agents choosing transformations from live system telemetry, and a
+            concurrent tile-based canvas with file-locking and live TCP display.</span>
+            <span data-lang="fr" hidden>Installation de traitement d'image distribué sur une grappe de Raspberry Pi, selon deux
+            architectures : des agents IA par Pi choisissant des transformations à partir de la télémétrie
+            système en direct, et une toile partagée par tuiles concurrentes avec verrouillage de fichiers et
+            affichage TCP en direct.</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">Python</span><span class="tag">distributed systems</span>
+            <span class="tag">LLM agents</span><span class="tag">Syncthing</span>
+          </div>
+          <div class="repo-link">
+            <a href="https://github.com/cbicari/technocompost" target="_blank" rel="noopener">technocompost</a> ·
+            <span data-lang="en"><a href="technocompost_architecture_en.html">architecture write-up</a></span>
+            <span data-lang="fr" hidden><a href="technocompost_architecture_fr.html">note d'architecture</a></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pillar">
+      <div class="pillar-label"><span data-lang="en">Signal architecture &amp; instrument design</span><span data-lang="fr" hidden>Architecture de signal et conception d'instruments</span></div>
+      <div class="card-grid">
+
+        <div class="card">
+          <h3>Improv based modular drum machine</h3>
+          <div class="bp-panel">
+            <svg viewBox="0 0 400 252" role="img" aria-label="Diagram: clock and CV utility drive percussion and tone sources, through texture and FX processing, to a stereo output for live improvisation.">
+              <rect x="0" y="0" width="400" height="252" fill="url(#bpGrid)"/>
+              <path class="bp-corner" d="M10 22 L10 10 L22 10"/>
+              <path class="bp-corner" d="M390 230 L390 242 L378 242"/>
+              <rect class="bp-box" x="90" y="20" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="34" text-anchor="middle">Clock, sequencing, CV utility</text>
+              <text class="bp-sub" x="200" y="47" text-anchor="middle">quantization, distribution</text>
+              <line class="bp-line" x1="200" y1="56" x2="200" y2="80" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="80" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="94" text-anchor="middle">Percussion, drum, tone sources</text>
+              <text class="bp-sub" x="200" y="107" text-anchor="middle">7 engines, 2 redundant pairs</text>
+              <line class="bp-line" x1="200" y1="116" x2="200" y2="140" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box" x="90" y="140" width="220" height="36" rx="1"/>
+              <text class="bp-title" x="200" y="154" text-anchor="middle">Texture, filtering, FX</text>
+              <text class="bp-sub" x="200" y="167" text-anchor="middle">granular, filters, mix, reverb</text>
+              <line class="bp-line" x1="200" y1="176" x2="200" y2="200" marker-end="url(#bpArrow)"/>
+              <rect class="bp-box-out" x="90" y="200" width="220" height="36" rx="1"/>
+              <text class="bp-out-title" x="200" y="214" text-anchor="middle">Stereo output, live improvisation</text>
+              <text class="bp-out-sub" x="200" y="227" text-anchor="middle">20 modules, 313 HP, powered case</text>
+            </svg>
+          </div>
+          <p>
+            <span data-lang="en">Research into building an improvisation-based drumming instrument for experimental electronic
+            music: a 20-module Eurorack signal chain — clock/CV utility, seven percussion and tone synthesis
+            engines, granular texture and filtering, mix and FX — designed alongside a hard power and space
+            budget across three rows (313 HP, 2.2 A / 0.8 A / 175 mA across three DC rails).</span>
+            <span data-lang="fr" hidden>Recherche autour d'un instrument de percussion basé sur l'improvisation pour la musique
+            électronique expérimentale : une chaîne de signal Eurorack de 20 modules — utilitaire horloge/CV,
+            sept moteurs de synthèse de percussions et de sons, texture granulaire et filtrage, mixage et
+            effets — conçue en respectant un budget strict de puissance et d'espace sur trois rangées
+            (313 HP, 2,2 A / 0,8 A / 175 mA sur trois rails DC).</span>
+          </p>
+          <div class="tag-row">
+            <span class="tag">signal routing</span><span class="tag">power budgeting</span>
+            <span class="tag">synthesis</span><span class="tag">improvisation systems</span>
+          </div>
+          <div class="private-note">
+            <span data-lang="en">Documented system. <a href="vieux_neant_architecture_en.html">Read the full architecture write-up →</a></span>
+            <span data-lang="fr" hidden>Système documenté. <a href="vieux_neant_architecture_fr.html">Lire la note d'architecture complète →</a></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </section>
 
 <footer class="site" id="contact">
   <div class="wrap">
     <p>
-      <span data-lang="en">
-        Open to embedded systems, embedded AI, and systems engineering roles. Happy to talk through any
-        project above in more depth.
-      </span>
-      <span data-lang="fr" hidden>
-        Ouvert aux postes en systèmes embarqués, en IA embarquée et en ingénierie des systèmes. Avec plaisir
-        pour approfondir n'importe quel projet ci-dessus.
-      </span>
+      <span data-lang="en">Open to embedded systems, embedded AI, and systems engineering roles. Happy to walk through any
+      project above in more depth, including the private firmware not linked here.</span>
+      <span data-lang="fr" hidden>Ouvert aux postes en systèmes embarqués, en IA embarquée et en ingénierie des systèmes.
+      Avec plaisir pour approfondir n'importe quel projet ci-dessus, y compris le firmware privé non lié ici.</span>
     </p>
     <div class="contact">
       <a href="mailto:bicari.charles@gmail.com">bicari.charles@gmail.com</a>
@@ -355,6 +815,58 @@
     </div>
   </div>
 </footer>
+
+<script>
+(function () {
+  var lines = [
+    "[diff] mag=0.482  centroid=(0.31,0.58)  fill=0.71",
+    "/booster/activeZone → 2   (electromagnet pairs: 6/20)",
+    "OSC 127.0.0.1:9000 → /wek/inputs   [63 floats]",
+    "kohya_ss: LoRA fine-tune, 400 steps, lr=1e-4",
+    "udev: 99-pointgrey-dc1394.rules → plugdev group",
+    "tile_worker: claimed (2,3), stress=1, script=lignine.py",
+    "EEPROM resume: reliability=clean, pos=[41200, 298110]",
+    "BLE adv: CBOR payload, 50 Hz, no connection required",
+    "nn~: RAVE model loaded, realtime decode @ 48kHz",
+    "puara.getVarText(\"ssid\") → reconfigured, no reflash"
+  ];
+
+  var el = document.getElementById('console-lines');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (reduced) {
+    lines.slice(0, 5).forEach(function (l) {
+      var d = document.createElement('div');
+      d.className = 'line show';
+      d.textContent = l;
+      el.appendChild(d);
+    });
+    return;
+  }
+
+  var visible = [];
+  var MAX_VISIBLE = 4;
+  var i = 0;
+
+  function tick() {
+    if (visible.length >= MAX_VISIBLE) {
+      var old = visible.shift();
+      old.remove();
+    }
+
+    var d = document.createElement('div');
+    d.className = 'line';
+    d.textContent = lines[i % lines.length];
+    el.appendChild(d);
+    visible.push(d);
+    requestAnimationFrame(function () { d.classList.add('show'); });
+    i++;
+  }
+
+  tick();
+  setInterval(tick, 2200);
+})();
+</script>
 
 <script src="assets/bg-canvas.js" defer></script>
 <script src="assets/i18n.js" defer></script>

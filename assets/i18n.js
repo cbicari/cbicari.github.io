@@ -1,7 +1,10 @@
 /*
  * Minimal EN/FR toggle. Any element carrying data-lang="en" or data-lang="fr"
- * is shown/hidden via the native `hidden` attribute; the choice is remembered
- * in localStorage and defaults to the browser's language on first visit.
+ * is shown/hidden via the native `hidden` attribute. French content stays in
+ * the markup but is kept silent for now — no visible toggle, and the page
+ * always defaults to English — so it's a matter of flipping this back on
+ * (and re-adding the toggle UI) once French copy is ready again. `?lang=fr`
+ * still works as a manual override for testing.
  */
 (function () {
   'use strict';
@@ -14,7 +17,7 @@
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved === 'en' || saved === 'fr') return saved;
     } catch (e) { /* localStorage unavailable (private mode, etc.) */ }
-    return (navigator.language || '').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
+    return 'en';
   }
 
   function applyLang(lang) {
